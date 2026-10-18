@@ -7,7 +7,13 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Wojob</string>
+	<string>WoJob</string>
+	<key>NSCameraUsageDescription</key>
+	<string>WoJob necesita la cámara para tomar la foto de tu rostro y de tu cédula, así como la foto al marcar tu entrada o salida.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>WoJob necesita acceso a tu galería para subir la foto de tu rostro y de tu cédula.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>WoJob registra tu ubicación exacta al marcar tu entrada y salida del trabajo.</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
