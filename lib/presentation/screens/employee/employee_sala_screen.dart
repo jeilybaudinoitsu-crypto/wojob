@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/empresa.dart';
-import '../../models/tipo_asistencia.dart';
-import '../../services/app_state.dart';
-import '../../widgets/section_card.dart';
-import '../shared/schedule_view.dart';
-import 'mark_attendance_screen.dart';
+import 'package:wojob/data/models/empresa.dart';
+import 'package:wojob/data/models/tipo_asistencia.dart';
+import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/presentation/widgets/section_card.dart';
+import 'package:wojob/presentation/screens/shared/schedule_view.dart';
+import 'package:wojob/presentation/screens/employee/mark_attendance_screen.dart';
 
 class EmployeeSalaScreen extends StatelessWidget {
   const EmployeeSalaScreen({super.key, required this.empresa});

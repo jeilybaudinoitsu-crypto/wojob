@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'app_colors.dart';
+import 'package:wojob/core/theme/app_colors.dart';
 
 /// Construye los [ThemeData] claro y oscuro de WoJob aplicando la paleta
 /// de rojos y grises con un estilo moderno y minimalista.

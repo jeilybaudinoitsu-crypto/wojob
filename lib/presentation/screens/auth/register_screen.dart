@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../models/tipo_usuario.dart';
-import '../../utils/validators.dart';
-import '../../widgets/app_text_field.dart';
-import '../../widgets/primary_button.dart';
-import 'register_photos_screen.dart';
+import 'package:wojob/data/models/tipo_usuario.dart';
+import 'package:wojob/core/utils/validators.dart';
+import 'package:wojob/presentation/widgets/app_text_field.dart';
+import 'package:wojob/presentation/widgets/primary_button.dart';
+import 'package:wojob/presentation/screens/auth/register_photos_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -20,8 +20,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _telefonoCtrl = TextEditingController();
   final _idCtrl = TextEditingController();
   final _cargoCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+  final _confirmCtrl = TextEditingController();
 
   TipoUsuario _tipo = TipoUsuario.empleado;
+  bool _obscurePass = true;
+  bool _obscureConfirm = true;
 
   @override
   void dispose() {
@@ -30,6 +34,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _telefonoCtrl.dispose();
     _idCtrl.dispose();
     _cargoCtrl.dispose();
+    _passCtrl.dispose();
+    _confirmCtrl.dispose();
     super.dispose();
   }
 
@@ -44,6 +50,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           telefono: _telefonoCtrl.text,
           idPersonal: _idCtrl.text,
           cargo: _cargoCtrl.text,
+          password: _passCtrl.text,
         ),
       ),
     );
@@ -141,8 +148,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   label: 'Cargo',
                   hint: 'Ej. Operador / Gerente',
                   prefixIcon: Icons.work_outline,
-                  textInputAction: TextInputAction.done,
+                  textInputAction: TextInputAction.next,
                   validator: (v) => Validators.required(v),
+                ),
+                const SizedBox(height: 20),
+                AppTextField(
+                  controller: _passCtrl,
+                  label: 'Contraseña',
+                  hint: 'Mínimo 8 caracteres',
+                  prefixIcon: Icons.lock_outline,
+                  obscureText: _obscurePass,
+                  textInputAction: TextInputAction.next,
+                  suffixIcon: IconButton(
+                    icon: Icon(_obscurePass
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined),
+                    onPressed: () => setState(() => _obscurePass = !_obscurePass),
+                  ),
+                  validator: Validators.password,
+                ),
+                const SizedBox(height: 20),
+                AppTextField(
+                  controller: _confirmCtrl,
+                  label: 'Confirmar contraseña',
+                  hint: 'Repite tu contraseña',
+                  prefixIcon: Icons.lock_outline,
+                  obscureText: _obscureConfirm,
+                  textInputAction: TextInputAction.done,
+                  suffixIcon: IconButton(
+                    icon: Icon(_obscureConfirm
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined),
+                    onPressed: () =>
+                        setState(() => _obscureConfirm = !_obscureConfirm),
+                  ),
+                  validator: (v) =>
+                      Validators.confirmPassword(v, _passCtrl.text),
                 ),
                 const SizedBox(height: 32),
                 PrimaryButton(

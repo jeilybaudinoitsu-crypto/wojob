@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../services/app_state.dart';
-import '../../utils/validators.dart';
-import '../../widgets/app_text_field.dart';
-import '../../widgets/primary_button.dart';
-import '../../theme/app_colors.dart';
-import '../home_router.dart';
+import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/core/utils/validators.dart';
+import 'package:wojob/presentation/widgets/app_text_field.dart';
+import 'package:wojob/presentation/widgets/primary_button.dart';
+import 'package:wojob/core/theme/app_colors.dart';
+import 'package:wojob/presentation/screens/home_router.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -41,7 +41,8 @@ class _LoginScreenState extends State<LoginScreen> {
     if (user == null) {
       setState(() {
         _loading = false;
-        _error = 'Credenciales no encontradas. Verifica correo, teléfono o ID.';
+        _error =
+            'Credenciales incorrectas. Verifica tu correo/teléfono/ID y contraseña.';
       });
       return;
     }

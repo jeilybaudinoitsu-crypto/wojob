@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../models/tipo_usuario.dart';
-import '../services/app_state.dart';
-import 'welcome_screen.dart';
-import 'employee/employee_home_screen.dart';
-import 'admin/admin_home_screen.dart';
+import 'package:wojob/data/models/tipo_usuario.dart';
+import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/presentation/screens/welcome_screen.dart';
+import 'package:wojob/presentation/screens/employee/employee_home_screen.dart';
+import 'package:wojob/presentation/screens/admin/admin_home_screen.dart';
 
 class HomeRouter extends StatelessWidget {
   const HomeRouter({super.key});

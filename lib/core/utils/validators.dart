@@ -41,6 +41,20 @@ class Validators {
     return null;
   }
 
+  /// Contraseña de la cuenta (auth). Mínimo 8 caracteres.
+  static String? password(String? value) {
+    if (value == null || value.isEmpty) return 'Crea una contraseña';
+    if (value.length < 8) return 'Mínimo 8 caracteres';
+    return null;
+  }
+
+  /// Confirmación de contraseña de la cuenta.
+  static String? confirmPassword(String? value, String original) {
+    if (value == null || value.isEmpty) return 'Repite la contraseña';
+    if (value != original) return 'Las contraseñas no coinciden';
+    return null;
+  }
+
   static String? salaId(String? value) {
     if (value == null || value.trim().isEmpty) return 'Ingresa ID de sala';
     final v = value.trim().toUpperCase();

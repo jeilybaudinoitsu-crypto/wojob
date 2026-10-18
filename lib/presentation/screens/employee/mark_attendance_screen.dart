@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/empresa.dart';
-import '../../models/tipo_asistencia.dart';
-import '../../services/app_state.dart';
-import '../../services/location_service.dart';
-import '../../services/media_service.dart';
-import '../../utils/formatters.dart';
-import '../../widgets/local_image.dart';
-import '../../widgets/primary_button.dart';
-import '../../widgets/section_card.dart';
+import 'package:wojob/data/models/empresa.dart';
+import 'package:wojob/data/models/tipo_asistencia.dart';
+import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/domain/services/location_service.dart';
+import 'package:wojob/domain/services/media_service.dart';
+import 'package:wojob/core/utils/formatters.dart';
+import 'package:wojob/presentation/widgets/local_image.dart';
+import 'package:wojob/presentation/widgets/map_preview.dart';
+import 'package:wojob/presentation/widgets/primary_button.dart';
+import 'package:wojob/presentation/widgets/section_card.dart';
 
 class MarkAttendanceScreen extends StatefulWidget {
   const MarkAttendanceScreen({
@@ -119,9 +120,10 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
                 subtitle: Text(
                   _gettingLoc
                       ? 'Obteniendo ubicación...'
-                      : _geo == null
+                      : _geo == null || !_geo!.isValid
                           ? 'No se pudo obtener ubicación'
-                          : formatCoordinates(_geo!.latitude, _geo!.longitude),
+                          : '${formatCoordinates(_geo!.latitude, _geo!.longitude)}'
+                              '${_geo!.accuracy != null ? ' · ±${_geo!.accuracy!.toStringAsFixed(0)} m' : ''}',
                 ),
                 contentPadding: EdgeInsets.zero,
                 trailing: IconButton(
@@ -129,6 +131,13 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
                   onPressed: _obtenerUbicacion,
                 ),
               ),
+              if (_geo != null && _geo!.isValid) ...[
+                const SizedBox(height: 8),
+                MapPreview(
+                  latitude: _geo!.latitude,
+                  longitude: _geo!.longitude,
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 20),

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/empresa.dart';
-import '../../models/perfil.dart';
-import '../../services/app_state.dart';
-import '../../widgets/avatar.dart';
-import '../../widgets/section_card.dart';
-import 'member_detail_screen.dart';
+import 'package:wojob/data/models/empresa.dart';
+import 'package:wojob/data/models/perfil.dart';
+import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/presentation/widgets/avatar.dart';
+import 'package:wojob/presentation/widgets/section_card.dart';
+import 'package:wojob/presentation/screens/admin/member_detail_screen.dart';
 
 class MembersScreen extends StatelessWidget {
   const MembersScreen({super.key, required this.empresa});

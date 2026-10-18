@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/empresa.dart';
-import '../../services/app_state.dart';
-import '../../utils/validators.dart';
-import '../../widgets/app_text_field.dart';
-import '../../widgets/primary_button.dart';
-import '../../widgets/section_card.dart';
-import '../../widgets/copyable_field.dart';
-import 'admin_sala_screen.dart';
+import 'package:wojob/data/models/empresa.dart';
+import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/core/utils/validators.dart';
+import 'package:wojob/presentation/widgets/app_text_field.dart';
+import 'package:wojob/presentation/widgets/primary_button.dart';
+import 'package:wojob/presentation/widgets/section_card.dart';
+import 'package:wojob/presentation/widgets/copyable_field.dart';
+import 'package:wojob/presentation/screens/admin/admin_sala_screen.dart';
 
 class CreateSalaScreen extends StatefulWidget {
   const CreateSalaScreen({super.key});

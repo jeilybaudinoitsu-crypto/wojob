@@ -1,4 +1,4 @@
-import 'dia_semana.dart';
+import 'package:wojob/data/models/dia_semana.dart';
 
 /// Mapea `public.horarios`. Cada fila es un día asignado a un empleado.
 class Horario {

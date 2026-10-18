@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../models/dia_semana.dart';
-import '../../models/horario.dart';
-import '../../utils/formatters.dart';
-import '../../widgets/section_card.dart';
+import 'package:wojob/data/models/dia_semana.dart';
+import 'package:wojob/data/models/horario.dart';
+import 'package:wojob/core/utils/formatters.dart';
+import 'package:wojob/presentation/widgets/section_card.dart';
 
 class ScheduleView extends StatelessWidget {
   const ScheduleView({

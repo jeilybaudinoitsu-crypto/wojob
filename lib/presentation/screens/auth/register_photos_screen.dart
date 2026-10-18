@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/tipo_usuario.dart';
-import '../../services/app_state.dart';
-import '../../services/media_service.dart';
-import '../../widgets/local_image.dart';
-import '../../widgets/primary_button.dart';
-import '../../widgets/section_card.dart';
-import '../home_router.dart';
+import 'package:wojob/data/models/tipo_usuario.dart';
+import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/domain/services/media_service.dart';
+import 'package:wojob/presentation/widgets/local_image.dart';
+import 'package:wojob/presentation/widgets/primary_button.dart';
+import 'package:wojob/presentation/widgets/section_card.dart';
+import 'package:wojob/presentation/screens/home_router.dart';
 
 class RegisterPhotosScreen extends StatefulWidget {
   const RegisterPhotosScreen({
@@ -18,6 +18,7 @@ class RegisterPhotosScreen extends StatefulWidget {
     required this.telefono,
     required this.idPersonal,
     required this.cargo,
+    required this.password,
   });
 
   final TipoUsuario tipoUsuario;
@@ -26,6 +27,7 @@ class RegisterPhotosScreen extends StatefulWidget {
   final String telefono;
   final String idPersonal;
   final String cargo;
+  final String password;
 
   @override
   State<RegisterPhotosScreen> createState() => _RegisterPhotosScreenState();
@@ -71,6 +73,7 @@ class _RegisterPhotosScreenState extends State<RegisterPhotosScreen> {
       telefono: widget.telefono,
       idPersonal: widget.idPersonal,
       cargo: widget.cargo,
+      password: widget.password,
       fotoUrl: _fotoUrl,
       cedulaUrl: _cedulaUrl,
     );

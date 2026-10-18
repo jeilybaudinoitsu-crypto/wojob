@@ -1,12 +1,12 @@
 import 'package:uuid/uuid.dart';
-import '../models/asistencia.dart';
-import '../models/dia_semana.dart';
-import '../models/tipo_asistencia.dart';
-import '../models/empresa.dart';
-import '../models/horario.dart';
-import '../models/perfil.dart';
-import '../models/solicitud_sala.dart';
-import '../models/tipo_usuario.dart';
+import 'package:wojob/data/models/asistencia.dart';
+import 'package:wojob/data/models/dia_semana.dart';
+import 'package:wojob/data/models/tipo_asistencia.dart';
+import 'package:wojob/data/models/empresa.dart';
+import 'package:wojob/data/models/horario.dart';
+import 'package:wojob/data/models/perfil.dart';
+import 'package:wojob/data/models/solicitud_sala.dart';
+import 'package:wojob/data/models/tipo_usuario.dart';
 
 const _uuid = Uuid();
 

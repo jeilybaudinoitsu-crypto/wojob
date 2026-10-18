@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
-import '../models/asistencia.dart';
-import '../models/empresa.dart';
-import '../models/horario.dart';
-import '../models/perfil.dart';
-import '../models/solicitud_sala.dart';
-import '../models/tipo_asistencia.dart';
-import '../models/tipo_usuario.dart';
-import '../models/dia_semana.dart';
-import 'mock_data.dart';
+import 'package:wojob/data/models/asistencia.dart';
+import 'package:wojob/data/models/empresa.dart';
+import 'package:wojob/data/models/horario.dart';
+import 'package:wojob/data/models/perfil.dart';
+import 'package:wojob/data/models/solicitud_sala.dart';
+import 'package:wojob/data/models/tipo_asistencia.dart';
+import 'package:wojob/data/models/tipo_usuario.dart';
+import 'package:wojob/data/models/dia_semana.dart';
+import 'package:wojob/data/datasources/mock_data.dart';
 
 const _uuid = Uuid();
+
+/// Contraseña por defecto de los usuarios de ejemplo (mock).
+const _seedPassword = 'WoJob1234';
 
 class AppState extends ChangeNotifier {
   AppState() {
@@ -24,6 +27,11 @@ class AppState extends ChangeNotifier {
   final _horarios = <String, Horario>{};
   final _asistencias = <String, Asistencia>{};
 
+  /// Almacén de contraseñas (mock).
+  ///
+  /// En producción la contraseña la gestiona Supabase Auth y NO se guarda aquí.
+  final _passwords = <String, String>{};
+
   Perfil? currentUser;
   ThemeMode themeMode = ThemeMode.light;
 
@@ -32,6 +40,9 @@ class AppState extends ChangeNotifier {
     _perfiles[MockData.admin.id] = MockData.admin;
     _perfiles[MockData.empleado1.id] = MockData.empleado1;
     _perfiles[MockData.empleado2.id] = MockData.empleado2;
+    for (final p in [MockData.admin, MockData.empleado1, MockData.empleado2]) {
+      _passwords[p.id] = _seedPassword;
+    }
     for (final s in MockData.solicitudesPendientes) {
       _solicitudes[s.id] = s;
     }
@@ -60,18 +71,22 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Login: acepta correo, teléfono o ID personal.
+  /// Login: acepta correo, teléfono o ID personal y valida la contraseña.
   Perfil? login(String credential, String password) {
     final q = credential.trim().toLowerCase();
     for (final p in _perfiles.values) {
       if (!p.estadoActivo) continue;
-      if (p.correo.trim().toLowerCase() == q ||
+      final coincide = p.correo.trim().toLowerCase() == q ||
           p.telefono.trim() == credential.trim() ||
-          p.idPersonal.trim().toLowerCase() == q) {
-        currentUser = p;
-        notifyListeners();
-        return currentUser;
+          p.idPersonal.trim().toLowerCase() == q;
+      if (!coincide) continue;
+      final esperada = _passwords[p.id];
+      if (esperada != null && esperada != password) {
+        return null; // credencial correcta, contraseña incorrecta
       }
+      currentUser = p;
+      notifyListeners();
+      return currentUser;
     }
     return null;
   }
@@ -84,6 +99,7 @@ class AppState extends ChangeNotifier {
     required String telefono,
     required String idPersonal,
     required String cargo,
+    required String password,
     String? fotoUrl,
     String? cedulaUrl,
   }) {
@@ -104,6 +120,7 @@ class AppState extends ChangeNotifier {
       createdAt: DateTime.now(),
     );
     _perfiles[id] = nuevo;
+    _passwords[id] = password;
     currentUser = nuevo;
     notifyListeners();
     return nuevo;

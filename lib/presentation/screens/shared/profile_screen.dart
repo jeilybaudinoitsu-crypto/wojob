@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../services/app_state.dart';
-import '../../widgets/primary_button.dart';
-import '../../widgets/section_card.dart';
-import '../../widgets/avatar.dart';
-import '../welcome_screen.dart';
+import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/presentation/widgets/primary_button.dart';
+import 'package:wojob/presentation/widgets/section_card.dart';
+import 'package:wojob/presentation/widgets/avatar.dart';
+import 'package:wojob/presentation/screens/welcome_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});

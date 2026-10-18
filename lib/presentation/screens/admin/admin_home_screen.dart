@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../services/app_state.dart';
-import '../../widgets/section_card.dart';
-import '../../widgets/avatar.dart';
-import '../../widgets/primary_button.dart';
-import '../shared/profile_screen.dart';
-import 'create_sala_screen.dart';
-import 'join_sala_screen.dart';
-import 'admin_sala_screen.dart';
+import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/presentation/widgets/section_card.dart';
+import 'package:wojob/presentation/widgets/avatar.dart';
+import 'package:wojob/presentation/widgets/primary_button.dart';
+import 'package:wojob/presentation/screens/shared/profile_screen.dart';
+import 'package:wojob/presentation/screens/admin/create_sala_screen.dart';
+import 'package:wojob/presentation/screens/admin/join_sala_screen.dart';
+import 'package:wojob/presentation/screens/admin/admin_sala_screen.dart';
 
 class AdminHomeScreen extends StatelessWidget {
   const AdminHomeScreen({super.key});

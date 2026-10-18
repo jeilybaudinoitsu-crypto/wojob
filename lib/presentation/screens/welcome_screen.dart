@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../services/app_state.dart';
-import '../widgets/primary_button.dart';
-import '../widgets/welcome_background.dart';
-import 'auth/login_screen.dart';
-import 'auth/register_screen.dart';
+import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/presentation/widgets/primary_button.dart';
+import 'package:wojob/presentation/widgets/welcome_background.dart';
+import 'package:wojob/presentation/screens/auth/login_screen.dart';
+import 'package:wojob/presentation/screens/auth/register_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});

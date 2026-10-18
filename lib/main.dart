@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 
-import 'services/app_state.dart';
-import 'theme/app_theme.dart';
-import 'screens/home_router.dart';
+import 'package:wojob/data/datasources/supabase_service.dart';
+import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/core/theme/app_theme.dart';
+import 'package:wojob/presentation/screens/home_router.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('es');
+  // Si hay configuración válida de Supabase se inicializa; de lo contrario la
+  // app continúa con los datos locales (mock) sin fallar.
+  await SupabaseService.initialize();
   runApp(const WoJobApp());
 }
 

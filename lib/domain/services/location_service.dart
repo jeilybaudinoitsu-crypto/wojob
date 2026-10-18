@@ -2,10 +2,21 @@ import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 
 class GeoPoint {
-  const GeoPoint({required this.latitude, required this.longitude, this.address});
+  const GeoPoint({
+    required this.latitude,
+    required this.longitude,
+    this.accuracy,
+    this.address,
+  });
   final double latitude;
   final double longitude;
+
+  /// Precisión estimada en metros (`geolocator` la reporta en metros).
+  final double? accuracy;
   final String? address;
+
+  /// `true` cuando la ubicación es válida (no es el fallback 0,0).
+  bool get isValid => latitude != 0.0 || longitude != 0.0;
 }
 
 class LocationService {
@@ -36,7 +47,11 @@ class LocationService {
           timeLimit: Duration(seconds: 15),
         ),
       );
-      return GeoPoint(latitude: pos.latitude, longitude: pos.longitude);
+      return GeoPoint(
+        latitude: pos.latitude,
+        longitude: pos.longitude,
+        accuracy: pos.accuracy,
+      );
     } catch (e) {
       return const GeoPoint(latitude: 0.0, longitude: 0.0);
     }

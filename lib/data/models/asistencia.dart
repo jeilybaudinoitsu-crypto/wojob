@@ -1,4 +1,4 @@
-import 'tipo_asistencia.dart';
+import 'package:wojob/data/models/tipo_asistencia.dart';
 
 /// Mapea `public.asistencias`.
 class Asistencia {

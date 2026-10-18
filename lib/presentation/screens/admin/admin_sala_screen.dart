@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/empresa.dart';
-import '../../models/solicitud_sala.dart';
-import '../../services/app_state.dart';
-import '../../widgets/section_card.dart';
-import '../../widgets/copyable_field.dart';
-import '../shared/profile_screen.dart';
-import '../welcome_screen.dart';
-import 'assign_shifts_screen.dart';
-import 'attendance_log_screen.dart';
-import 'members_screen.dart';
-import 'requests_screen.dart';
+import 'package:wojob/data/models/empresa.dart';
+import 'package:wojob/data/models/solicitud_sala.dart';
+import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/presentation/widgets/section_card.dart';
+import 'package:wojob/presentation/widgets/copyable_field.dart';
+import 'package:wojob/presentation/screens/shared/profile_screen.dart';
+import 'package:wojob/presentation/screens/welcome_screen.dart';
+import 'package:wojob/presentation/screens/admin/assign_shifts_screen.dart';
+import 'package:wojob/presentation/screens/admin/attendance_log_screen.dart';
+import 'package:wojob/presentation/screens/admin/members_screen.dart';
+import 'package:wojob/presentation/screens/admin/requests_screen.dart';
 
 class AdminSalaScreen extends StatelessWidget {
   const AdminSalaScreen({super.key, required this.empresa});

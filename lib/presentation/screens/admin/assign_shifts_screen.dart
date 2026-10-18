@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/dia_semana.dart';
-import '../../models/empresa.dart';
-import '../../services/app_state.dart';
-import '../../utils/formatters.dart';
-import '../../widgets/primary_button.dart';
-import '../../widgets/section_card.dart';
-import '../../widgets/empty_state.dart';
-import '../../widgets/avatar.dart';
+import 'package:wojob/data/models/dia_semana.dart';
+import 'package:wojob/data/models/empresa.dart';
+import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/core/utils/formatters.dart';
+import 'package:wojob/presentation/widgets/primary_button.dart';
+import 'package:wojob/presentation/widgets/section_card.dart';
+import 'package:wojob/presentation/widgets/empty_state.dart';
+import 'package:wojob/presentation/widgets/avatar.dart';
 
 class AssignShiftsScreen extends StatefulWidget {
   const AssignShiftsScreen({super.key, required this.empresa});

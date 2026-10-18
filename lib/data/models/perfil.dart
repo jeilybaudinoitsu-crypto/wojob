@@ -1,4 +1,4 @@
-import 'tipo_usuario.dart';
+import 'package:wojob/data/models/tipo_usuario.dart';
 
 /// Mapea `public.perfiles`.
 class Perfil {
