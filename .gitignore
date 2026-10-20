@@ -48,3 +48,5 @@ app.*.map.json
 .widget_preview/
 .env
 node_modules/
+assets/config/supabase_config.json
+
