@@ -10,12 +10,18 @@ class SupabaseEmpresaRepository implements EmpresaRepository {
 
   final sb.SupabaseClient _client;
   static const String _table = 'empresas';
+  static const String _columns =
+      'id,id_sala,nombre_empresa,direccion_empresa,created_at';
 
   @override
   Future<Empresa> create(Empresa empresa) async {
     try {
-      await _client.from(_table).insert(empresa.toMap());
-      return empresa;
+      final data = await _client
+          .from(_table)
+          .insert(empresa.toMap())
+          .select(_columns)
+          .single();
+      return Empresa.fromMap(data);
     } catch (e) {
       throw AppException('No se pudo crear la sala.', cause: e);
     }
@@ -24,7 +30,11 @@ class SupabaseEmpresaRepository implements EmpresaRepository {
   @override
   Future<Empresa?> findById(String id) async {
     final data =
-        await _client.from(_table).select().eq('id', id).maybeSingle();
+        await _client
+            .from(_table)
+            .select(_columns)
+            .eq('id', id)
+            .maybeSingle();
     return data == null ? null : Empresa.fromMap(data);
   }
 
@@ -32,7 +42,7 @@ class SupabaseEmpresaRepository implements EmpresaRepository {
   Future<Empresa?> findBySalaId(String idSala) async {
     final data = await _client
         .from(_table)
-        .select()
+        .select(_columns)
         .eq('id_sala', idSala.trim().toUpperCase())
         .maybeSingle();
     return data == null ? null : Empresa.fromMap(data);
@@ -40,7 +50,7 @@ class SupabaseEmpresaRepository implements EmpresaRepository {
 
   @override
   Future<List<Empresa>> all() async {
-    final rows = await _client.from(_table).select();
+    final rows = await _client.from(_table).select(_columns);
     return (rows as List)
         .map((e) => Empresa.fromMap(e as Map<String, dynamic>))
         .toList();

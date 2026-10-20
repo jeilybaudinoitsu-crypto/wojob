@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/core/errors/app_exception.dart';
 import 'package:wojob/core/utils/validators.dart';
 import 'package:wojob/presentation/widgets/app_text_field.dart';
 import 'package:wojob/presentation/widgets/primary_button.dart';
@@ -36,13 +37,20 @@ class _LoginScreenState extends State<LoginScreen> {
       _error = null;
     });
     final app = context.read<AppState>();
-    await Future.delayed(const Duration(milliseconds: 250));
-    final user = app.login(_credCtrl.text, _passCtrl.text);
-    if (user == null) {
+    try {
+      final user = await app.login(_credCtrl.text, _passCtrl.text);
+      if (user == null) {
+        setState(() {
+          _loading = false;
+          _error = 'Credenciales incorrectas. Verifica tu correo y contraseña.';
+        });
+        return;
+      }
+    } catch (e) {
+      if (!mounted) return;
       setState(() {
         _loading = false;
-        _error =
-            'Credenciales incorrectas. Verifica tu correo/teléfono/ID y contraseña.';
+        _error = e is AppException ? e.message : e.toString();
       });
       return;
     }
@@ -74,7 +82,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Puedes iniciar sesión con tu correo, número de teléfono o ID.',
+                  context.watch<AppState>().isBackendEnabled
+                      ? 'Inicia sesión con el correo y contraseña de Supabase.'
+                      : 'Puedes iniciar sesión con tu correo, número de teléfono o ID.',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.68),
                   ),
@@ -82,8 +92,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 32),
                 AppTextField(
                   controller: _credCtrl,
-                  label: 'Correo / Teléfono / ID',
-                  hint: 'ej. maria@wojob.com o EMP-1048',
+                  label: context.watch<AppState>().isBackendEnabled
+                      ? 'Correo electrónico'
+                      : 'Correo / Teléfono / ID',
+                  hint: context.watch<AppState>().isBackendEnabled
+                      ? 'ej. maria@wojob.com'
+                      : 'ej. maria@wojob.com o EMP-1048',
                   prefixIcon: Icons.person_outline,
                   textInputAction: TextInputAction.next,
                   validator: (v) => Validators.required(v, 'Campo obligatorio'),

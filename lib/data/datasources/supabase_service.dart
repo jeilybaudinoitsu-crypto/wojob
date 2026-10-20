@@ -16,15 +16,16 @@ class SupabaseService {
 
   /// Inicializa Supabase si hay configuración válida. Si no la hay, la app
   /// continúa en modo local (datos mock) sin lanzar excepciones.
-  static Future<void> initialize() async {
-    if (_initialized) return;
+  static Future<bool> initialize() async {
+    if (_initialized) return true;
     final config = await SupabaseConfig.load();
-    if (!config.isConfigured) return;
+    if (!config.isConfigured) return false;
     await Supabase.initialize(
       url: config.url,
       anonKey: config.anonKey,
     );
     _initialized = true;
+    return true;
   }
 
   /// Cliente de Supabase. Solo debe usarse cuando [isEnabled] es `true`.

@@ -17,11 +17,18 @@ abstract class AuthRepository {
   /// Perfil del usuario con sesión activa (si existe).
   Perfil? get currentProfile;
 
+  Future<Perfil?> restoreSession();
+
   /// Crea la cuenta (Auth) y el perfil asociado.
   Future<Perfil> signUp({required Perfil perfil, required String password});
 
   /// Inicia sesión y devuelve el perfil del usuario.
   Future<Perfil?> signIn({required String correo, required String password});
+
+  Future<List<Perfil>> byEmpresa(String empresaId);
+  Future<Perfil?> findById(String userId);
+  Future<Perfil> updatePhotos(Perfil perfil);
+  Future<Perfil> updateEmpresa(String userId, String? empresaId);
 
   Future<void> signOut();
 }
@@ -42,6 +49,7 @@ abstract class SolicitudRepository {
 abstract class HorarioRepository {
   Future<Horario> create(Horario horario);
   Future<List<Horario>> byEmpleado(String empleadoId);
+  Future<List<Horario>> byEmpresa(String empresaId);
   Future<void> delete(String horarioId);
 }
 
@@ -52,11 +60,16 @@ abstract class AsistenciaRepository {
 }
 
 abstract class StorageRepository {
-  /// Sube bytes a un bucket y devuelve la URL pública del objeto.
+  /// Sube bytes a un bucket privado y devuelve la ruta del objeto.
   Future<String> upload({
     required String bucket,
     required String path,
     required Uint8List bytes,
     String contentType = 'image/jpeg',
+  });
+
+  Future<String> createSignedUrl({
+    required String bucket,
+    required String path,
   });
 }

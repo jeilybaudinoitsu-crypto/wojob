@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:wojob/data/models/empresa.dart';
+import 'package:wojob/core/errors/app_exception.dart';
 import 'package:wojob/presentation/state/app_state.dart';
 import 'package:wojob/core/utils/validators.dart';
 import 'package:wojob/presentation/widgets/app_text_field.dart';
@@ -23,6 +24,8 @@ class _CreateSalaScreenState extends State<CreateSalaScreen> {
   final _direccionCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   Empresa? _creada;
+  bool _loading = false;
+  String? _error;
 
   @override
   void dispose() {
@@ -32,14 +35,27 @@ class _CreateSalaScreenState extends State<CreateSalaScreen> {
     super.dispose();
   }
 
-  void _crear() {
+  Future<void> _crear() async {
     if (!_formKey.currentState!.validate()) return;
-    final empresa = context.read<AppState>().createSala(
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final empresa = await context.read<AppState>().createSala(
           nombreEmpresa: _nombreCtrl.text,
           direccionEmpresa: _direccionCtrl.text,
           passwordHash: _passCtrl.text,
         );
-    setState(() => _creada = empresa);
+      if (mounted) setState(() => _creada = empresa);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = e is AppException ? e.message : e.toString();
+        });
+      }
+    }
   }
 
   @override
@@ -103,9 +119,13 @@ class _CreateSalaScreenState extends State<CreateSalaScreen> {
           ),
         ),
         const SizedBox(height: 32),
+        if (_error != null) ...[
+          Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
+          const SizedBox(height: 12),
+        ],
         PrimaryButton(
-          onPressed: _crear,
-          label: 'Crear sala y generar ID',
+          onPressed: _loading ? null : _crear,
+          label: _loading ? 'Creando sala...' : 'Crear sala y generar ID',
         ),
       ],
     );

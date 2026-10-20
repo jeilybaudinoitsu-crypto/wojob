@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'package:wojob/data/models/dia_semana.dart';
 import 'package:wojob/data/models/empresa.dart';
+import 'package:wojob/core/errors/app_exception.dart';
 import 'package:wojob/presentation/state/app_state.dart';
 import 'package:wojob/core/utils/formatters.dart';
 import 'package:wojob/presentation/widgets/primary_button.dart';
@@ -24,6 +25,8 @@ class _AssignShiftsScreenState extends State<AssignShiftsScreen> {
   DiaSemana _dia = DiaSemana.lunes;
   TimeOfDay _entrada = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _salida = const TimeOfDay(hour: 17, minute: 0);
+  bool _loading = false;
+  String? _error;
 
   String _fmt(TimeOfDay t) =>
       '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
@@ -43,18 +46,45 @@ class _AssignShiftsScreenState extends State<AssignShiftsScreen> {
     });
   }
 
-  void _agregar() {
+  Future<void> _agregar() async {
     if (_empleadoId == null) return;
-    context.read<AppState>().assignShift(
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      await context.read<AppState>().assignShift(
           empresaId: widget.empresa.id,
           empleadoId: _empleadoId!,
           diaSemana: _dia,
           horaEntrada: _fmt(_entrada),
           horaSalida: _fmt(_salida),
         );
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Turno asignado (${_dia.label} ${_fmt(_entrada)}–${_fmt(_salida)})')),
-    );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Turno asignado (${_dia.label} ${_fmt(_entrada)}–${_fmt(_salida)})')),
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = e is AppException ? e.message : e.toString());
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _eliminar(String id) async {
+    try {
+      await context.read<AppState>().removeShift(id);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e is AppException ? e.message : e.toString()),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -142,7 +172,14 @@ class _AssignShiftsScreenState extends State<AssignShiftsScreen> {
                 ],
               ),
               const SizedBox(height: 20),
-              PrimaryButton(onPressed: _agregar, label: 'Asignar turno'),
+              if (_error != null) ...[
+                Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
+                const SizedBox(height: 12),
+              ],
+              PrimaryButton(
+                onPressed: _loading ? null : _agregar,
+                label: _loading ? 'Guardando...' : 'Asignar turno',
+              ),
             ],
           ),
           const SizedBox(height: 20),
@@ -165,7 +202,7 @@ class _AssignShiftsScreenState extends State<AssignShiftsScreen> {
                     subtitle: Text('${h.horaEntrada} – ${h.horaSalida}'),
                     trailing: IconButton(
                       icon: Icon(Icons.delete_outline, color: theme.colorScheme.error),
-                      onPressed: () => state.removeShift(h.id),
+                      onPressed: () => _eliminar(h.id),
                     ),
                     contentPadding: EdgeInsets.zero,
                   ),

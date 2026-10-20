@@ -5,6 +5,7 @@ import 'package:wojob/data/models/empresa.dart';
 import 'package:wojob/data/models/perfil.dart';
 import 'package:wojob/data/models/solicitud_sala.dart';
 import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/core/errors/app_exception.dart';
 import 'package:wojob/core/utils/formatters.dart';
 import 'package:wojob/presentation/widgets/avatar.dart';
 import 'package:wojob/presentation/widgets/empty_state.dart';
@@ -189,9 +190,21 @@ class RequestsScreen extends StatelessWidget {
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () {
-                          state.rejectSolicitud(s.id);
-                          Navigator.pop(ctx);
+                        onPressed: () async {
+                          try {
+                            await state.rejectSolicitud(s.id);
+                            if (ctx.mounted) Navigator.pop(ctx);
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    e is AppException ? e.message : e.toString(),
+                                  ),
+                                ),
+                              );
+                            }
+                          }
                         },
                         icon: const Icon(Icons.close),
                         style: OutlinedButton.styleFrom(
@@ -204,9 +217,21 @@ class RequestsScreen extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () {
-                          state.acceptSolicitud(s.id);
-                          Navigator.pop(ctx);
+                        onPressed: () async {
+                          try {
+                            await state.acceptSolicitud(s.id);
+                            if (ctx.mounted) Navigator.pop(ctx);
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    e is AppException ? e.message : e.toString(),
+                                  ),
+                                ),
+                              );
+                            }
+                          }
                         },
                         icon: const Icon(Icons.check),
                         label: const Text('Aceptar'),

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:wojob/data/models/tipo_usuario.dart';
 import 'package:wojob/presentation/state/app_state.dart';
 import 'package:wojob/domain/services/media_service.dart';
+import 'package:wojob/core/errors/app_exception.dart';
 import 'package:wojob/presentation/widgets/local_image.dart';
 import 'package:wojob/presentation/widgets/primary_button.dart';
 import 'package:wojob/presentation/widgets/section_card.dart';
@@ -35,18 +36,19 @@ class RegisterPhotosScreen extends StatefulWidget {
 
 class _RegisterPhotosScreenState extends State<RegisterPhotosScreen> {
   final _media = MediaService();
-  String? _fotoUrl;
-  String? _cedulaUrl;
+  CapturedPhoto? _foto;
+  CapturedPhoto? _cedula;
   bool _loading = false;
+  String? _error;
 
   Future<void> _tomarFoto(bool esCedula) async {
     final res = await _media.takeFromCamera();
     if (res == null) return;
     setState(() {
       if (esCedula) {
-        _cedulaUrl = res.path;
+        _cedula = res;
       } else {
-        _fotoUrl = res.path;
+        _foto = res;
       }
     });
   }
@@ -56,28 +58,49 @@ class _RegisterPhotosScreenState extends State<RegisterPhotosScreen> {
     if (res == null) return;
     setState(() {
       if (esCedula) {
-        _cedulaUrl = res.path;
+        _cedula = res;
       } else {
-        _fotoUrl = res.path;
+        _foto = res;
       }
     });
   }
 
   Future<void> _finalizar() async {
-    setState(() => _loading = true);
-    final app = context.read<AppState>();
-    app.register(
-      tipoUsuario: widget.tipoUsuario,
-      nombreCompleto: widget.nombreCompleto,
-      correo: widget.correo,
-      telefono: widget.telefono,
-      idPersonal: widget.idPersonal,
-      cargo: widget.cargo,
-      password: widget.password,
-      fotoUrl: _fotoUrl,
-      cedulaUrl: _cedulaUrl,
-    );
-    await Future.delayed(const Duration(milliseconds: 200));
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final app = context.read<AppState>();
+      final fotoBytes =
+          _foto == null ? null : await _media.compressPhoto(_foto!);
+      final cedulaBytes =
+          _cedula == null ? null : await _media.compressPhoto(_cedula!);
+      if ((_foto != null && fotoBytes == null) ||
+          (_cedula != null && cedulaBytes == null)) {
+        throw const AppException('No se pudo leer una de las fotos seleccionadas.');
+      }
+      await app.register(
+        tipoUsuario: widget.tipoUsuario,
+        nombreCompleto: widget.nombreCompleto,
+        correo: widget.correo,
+        telefono: widget.telefono,
+        idPersonal: widget.idPersonal,
+        cargo: widget.cargo,
+        password: widget.password,
+        fotoUrl: _foto?.path,
+        cedulaUrl: _cedula?.path,
+        fotoBytes: fotoBytes,
+        cedulaBytes: cedulaBytes,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = e is AppException ? e.message : e.toString();
+      });
+      return;
+    }
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const HomeRouter()),
@@ -110,7 +133,7 @@ class _RegisterPhotosScreenState extends State<RegisterPhotosScreen> {
               title: 'Foto de rostro (frente)',
               subtitle: 'Toma una foto nítida, con buena iluminación.',
               children: [
-                _preview(_fotoUrl),
+                _preview(_foto?.path),
                 const SizedBox(height: 16),
                 Row(
                   children: [
@@ -138,7 +161,7 @@ class _RegisterPhotosScreenState extends State<RegisterPhotosScreen> {
               title: 'Cédula de identidad',
               subtitle: 'Sube una foto clara de tu cédula (frente).',
               children: [
-                _preview(_cedulaUrl),
+                _preview(_cedula?.path),
                 const SizedBox(height: 16),
                 Row(
                   children: [
@@ -162,6 +185,13 @@ class _RegisterPhotosScreenState extends State<RegisterPhotosScreen> {
               ],
             ),
             const SizedBox(height: 32),
+            if (_error != null) ...[
+              Text(
+                _error!,
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+              const SizedBox(height: 12),
+            ],
             PrimaryButton(
               onPressed: _loading ? null : _finalizar,
               label: _loading ? 'Registrando...' : 'Finalizar registro',

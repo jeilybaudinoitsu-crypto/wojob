@@ -7,7 +7,10 @@ class AppConfig {
   /// Bucket (Supabase Storage) donde se suben las fotos de las asistencias.
   static const String asistenciasBucket = 'asistencias';
 
-  /// Bucket donde se suben cédulas y fotos de rostro del registro.
+  /// Bucket privado donde se guardan las fotos de perfil.
+  static const String avataresBucket = 'avatares';
+
+  /// Bucket privado donde se guardan cédulas y documentos de identidad.
   static const String documentosBucket = 'documentos';
 
   /// Tamaño máximo objetivo de una foto antes de subirla a la nube (< 300 KB).

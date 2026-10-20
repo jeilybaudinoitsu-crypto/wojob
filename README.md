@@ -40,16 +40,16 @@ flutter pub get
 
 ## Configuración de Supabase
 
-Hay dos formas de indicar la URL y la **anon key** (ambas son credenciales
-públicas del cliente, seguras de exponer):
+Hay dos formas de indicar la URL y una **publishable/anon key** (credencial
+pública del cliente; nunca uses la `service_role key`):
 
-1. **Archivo de assets** (recomendado para desarrollo): edita
-   `assets/config/supabase_config.json`.
+1. **Archivo de assets**: edita `assets/config/supabase_config.json`. El archivo
+   está vacío inicialmente; mientras siga vacío, la app usa datos mock locales.
 
    ```json
    {
-     "SUPABASE_URL": "https://TU-PROYECTO.supabase.co",
-     "SUPABASE_ANON_KEY": "TU_ANON_KEY"
+     "SUPABASE_URL": "https://<project-ref>.supabase.co",
+     "SUPABASE_PUBLISHABLE_KEY": "<publishable-key>"
    }
    ```
 
@@ -58,20 +58,27 @@ públicas del cliente, seguras de exponer):
 
    ```bash
    flutter run \
-     --dart-define=SUPABASE_URL=https://TU-PROYECTO.supabase.co \
-     --dart-define=SUPABASE_ANON_KEY=TU_ANON_KEY
+     --dart-define=SUPABASE_URL=https://<project-ref>.supabase.co \
+     --dart-define=SUPABASE_PUBLISHABLE_KEY=<publishable-key>
    ```
 
-Si no se configura nada, `SupabaseService.initialize()` no hace nada y la app
-arranca en modo mock sin errores.
+La app **no lee `.env`**. Si falta la URL o la key, aparece un aviso permanente
+de modo local: no se envían peticiones a Supabase y los cambios se pierden al
+cerrar. En modo remoto, el registro, empresas, solicitudes, turnos, asistencias
+y fotos pasan por los repositorios Supabase; los fallos de red, Auth, permisos
+o Storage se muestran en pantalla.
 
 > **Seguridad:** nunca incluyas la `service_role key` en la app ni en el
-> repositorio. La `anon key` sí puede ir en el cliente.
+> repositorio. La publishable/anon key sí puede ir en el cliente.
 
-### Base de datos
+### Base de datos y Storage
 
-El esquema SQL está en la carpeta [`database/`](database) y debe ejecutarse en
-el editor SQL de Supabase en el orden `tabla1.SQL` → `tabla5.sql`:
+Si el proyecto aún no tiene las tablas, ejecuta una sola vez los archivos de
+[`supabase/migrations/`](./supabase/migrations/) en el **SQL Editor** de
+Supabase, en orden numérico del 1 al 5. Si ya existen, no vuelvas a ejecutar los
+`CREATE TABLE`; comprueba los nombres de tablas, columnas y tipos en **Table
+Editor**. Esas migraciones crean las tablas, pero no crean buckets ni políticas
+RLS.
 
 | Tabla | Propósito |
 | --- | --- |
@@ -81,10 +88,38 @@ el editor SQL de Supabase en el orden `tabla1.SQL` → `tabla5.sql`:
 | `horarios` | Turnos por empleado y día de la semana. |
 | `asistencias` | Marcaciones (tipo, `latitud`, `longitud`, `foto_url`). |
 
-La contraseña **no** se guarda en `perfiles`: la gestiona **Supabase Auth**
-(`auth.users`).
+La ubicación que captura la app es GPS (`latitud`/`longitud`), no la dirección
+IP del dispositivo.
 
-Buckets de Storage sugeridos: `asistencias` y `documentos`.
+La contraseña de la cuenta **no** se guarda en `perfiles`: la gestiona
+**Supabase Auth** (`auth.users`). Para que el registro desde la app inserte el
+perfil y suba las fotos en el mismo paso, en desarrollo desactiva
+**Authentication → Providers → Email → Confirm email**. Con confirmación
+activada, Supabase no entrega una sesión durante el registro y la app no puede
+insertar el perfil ni subir archivos hasta que el usuario inicie sesión.
+
+En **Storage → New bucket**, crea estos buckets como **privados**:
+
+| Bucket | Contenido | Ruta usada por la app |
+| --- | --- | --- |
+| `avatares` | Foto de perfil | `<auth.uid()>/foto.jpg` |
+| `documentos` | Foto de cédula | `<auth.uid()>/cedula.jpg` |
+| `asistencias` | Foto al marcar entrada/salida | `<empresa_id>/<auth.uid()>/<id>.jpg` |
+
+Después de crear los buckets y las tablas, ejecuta una sola vez
+[`supabase/storage_policies.sql`](./supabase/storage_policies.sql) desde el
+**SQL Editor**. Las políticas dejan `documentos` privado, restringen subidas a
+la carpeta del usuario y dan acceso a las fotos de asistencia solo al empleado
+dueño o a administradores de su empresa. No hagas público el bucket
+`documentos`: la app guarda la ruta y solicita URLs firmadas para mostrar las
+imágenes.
+
+Finalmente, habilita RLS en las cinco tablas y crea políticas `SELECT`,
+`INSERT`, `UPDATE` y `DELETE` según el rol y pertenencia a empresa. Las tablas
+deben dar acceso de Data API al rol `authenticated`; no uses la `service_role`
+en Flutter ni des acceso público sin RLS. La consola de Supabase → **Database →
+Table Editor** muestra las filas remotas; Flutter no usa `localStorage` como
+base de datos.
 
 ---
 

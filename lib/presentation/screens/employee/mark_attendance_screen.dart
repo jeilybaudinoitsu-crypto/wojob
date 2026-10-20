@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'package:wojob/data/models/empresa.dart';
 import 'package:wojob/data/models/tipo_asistencia.dart';
+import 'package:wojob/core/errors/app_exception.dart';
 import 'package:wojob/presentation/state/app_state.dart';
 import 'package:wojob/domain/services/location_service.dart';
 import 'package:wojob/domain/services/media_service.dart';
@@ -30,7 +31,7 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
   final _media = MediaService();
   final _location = LocationService();
 
-  String? _fotoUrl;
+  CapturedPhoto? _foto;
   GeoPoint? _geo;
   bool _loading = false;
   bool _gettingLoc = false;
@@ -44,13 +45,13 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
   Future<void> _tomarFoto() async {
     final res = await _media.takeFromCamera();
     if (res == null) return;
-    setState(() => _fotoUrl = res.path);
+    setState(() => _foto = res);
   }
 
   Future<void> _galeria() async {
     final res = await _media.takeFromGallery();
     if (res == null) return;
-    setState(() => _fotoUrl = res.path);
+    setState(() => _foto = res);
   }
 
   Future<void> _obtenerUbicacion() async {
@@ -63,24 +64,45 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
   }
 
   Future<void> _marcar() async {
-    if (_fotoUrl == null || _fotoUrl!.isEmpty) {
+    if (_foto == null || _foto!.path.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Debes tomar una foto para marcar.')),
+      );
+      return;
+    }
+    if (_geo == null || !_geo!.isValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Activa los permisos de ubicación y vuelve a intentarlo.'),
+        ),
       );
       return;
     }
     final user = context.read<AppState>().currentUser;
     if (user == null) return;
     setState(() => _loading = true);
-    context.read<AppState>().markAttendance(
-          empleadoId: user.id,
-          empresaId: widget.empresa.id,
-          tipo: widget.tipo,
-          latitud: _geo?.latitude ?? 0.0,
-          longitud: _geo?.longitude ?? 0.0,
-          fotoUrl: _fotoUrl!,
-        );
-    await Future.delayed(const Duration(milliseconds: 250));
+    try {
+      final photoBytes = await _media.compressPhoto(_foto!);
+      if (photoBytes == null) {
+        throw const AppException('No se pudo leer la foto seleccionada.');
+      }
+      await context.read<AppState>().markAttendance(
+            empleadoId: user.id,
+            empresaId: widget.empresa.id,
+            tipo: widget.tipo,
+            latitud: _geo!.latitude,
+            longitud: _geo!.longitude,
+            fotoUrl: _foto!.path,
+            fotoBytes: photoBytes,
+          );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e is AppException ? e.message : e.toString())),
+      );
+      return;
+    }
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -145,7 +167,7 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
             title: 'Foto al momento de ${widget.tipo.dbValue}',
             subtitle: 'Toma una foto de tu ubicación actual.',
             children: [
-              _preview(_fotoUrl),
+              _preview(_foto?.path),
               const SizedBox(height: 16),
               Row(
                 children: [

@@ -21,7 +21,7 @@ class LocalImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (kIsWeb) {
+    if (kIsWeb || Uri.tryParse(path)?.hasAuthority == true) {
       return Image.network(
         path,
         fit: fit,
@@ -56,6 +56,7 @@ class LocalImage extends StatelessWidget {
 /// Indica si una ruta de foto local existe (siempre true en web).
 bool localPhotoExists(String? path) {
   if (path == null || path.isEmpty) return false;
+  if (Uri.tryParse(path)?.hasAuthority == true) return true;
   if (kIsWeb) return true;
   return File(path).existsSync();
 }

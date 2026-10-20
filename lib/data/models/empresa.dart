@@ -37,20 +37,20 @@ class Empresa {
   }
 
   factory Empresa.fromMap(Map<String, dynamic> map) => Empresa(
-        id: map['id'] as String,
-        idSala: map['id_sala'] as String,
-        nombreEmpresa: map['nombre_empresa'] as String,
-        direccionEmpresa: map['direccion_empresa'] as String,
-        passwordHash: map['password_hash'] as String,
-        createdAt: DateTime.tryParse('${map['created_at']}') ?? DateTime.now(),
-      );
+    id: map['id'] as String,
+    idSala: map['id_sala'] as String,
+    nombreEmpresa: map['nombre_empresa'] as String,
+    direccionEmpresa: map['direccion_empresa'] as String,
+    passwordHash: map['password_hash'] as String? ?? '',
+    createdAt: DateTime.tryParse('${map['created_at']}') ?? DateTime.now(),
+  );
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'id_sala': idSala,
-        'nombre_empresa': nombreEmpresa,
-        'direccion_empresa': direccionEmpresa,
-        'password_hash': passwordHash,
-        'created_at': createdAt.toIso8601String(),
-      };
+    'id': id,
+    'id_sala': idSala,
+    'nombre_empresa': nombreEmpresa,
+    'direccion_empresa': direccionEmpresa,
+    'password_hash': passwordHash,
+    'created_at': createdAt.toIso8601String(),
+  };
 }

@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/core/errors/app_exception.dart';
 import 'package:wojob/core/utils/validators.dart';
 import 'package:wojob/presentation/widgets/app_text_field.dart';
 import 'package:wojob/presentation/widgets/primary_button.dart';
 import 'package:wojob/presentation/widgets/section_card.dart';
-import 'package:wojob/presentation/screens/admin/admin_sala_screen.dart';
 
 class JoinSalaScreen extends StatefulWidget {
   const JoinSalaScreen({super.key});
@@ -19,6 +19,7 @@ class _JoinSalaScreenState extends State<JoinSalaScreen> {
   final _formKey = GlobalKey<FormState>();
   final _salaIdCtrl = TextEditingController();
   String? _error;
+  bool _loading = false;
 
   @override
   void dispose() {
@@ -26,20 +27,39 @@ class _JoinSalaScreenState extends State<JoinSalaScreen> {
     super.dispose();
   }
 
-  void _unirse() {
+  Future<void> _unirse() async {
     if (!_formKey.currentState!.validate()) return;
     final app = context.read<AppState>();
     final user = app.currentUser;
     if (user == null) return;
-    final empresa = app.findEmpresaBySalaId(_salaIdCtrl.text);
-    if (empresa == null) {
-      setState(() => _error = 'No existe una sala con ese ID.');
-      return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final ok = await app.joinSala(_salaIdCtrl.text, usuarioId: user.id);
+      if (!mounted) return;
+      if (!ok) {
+        setState(() {
+          _loading = false;
+          _error = 'No existe la sala o ya tienes una solicitud pendiente.';
+        });
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Solicitud enviada. Espera la aprobación del administrador.'),
+        ),
+      );
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = e is AppException ? e.message : e.toString();
+        });
+      }
     }
-    _error = null;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => AdminSalaScreen(empresa: empresa)),
-    );
   }
 
   @override
@@ -88,8 +108,8 @@ class _JoinSalaScreenState extends State<JoinSalaScreen> {
               ],
               const SizedBox(height: 20),
               PrimaryButton(
-                onPressed: _unirse,
-                label: 'Unirme',
+                onPressed: _loading ? null : _unirse,
+                label: _loading ? 'Enviando...' : 'Unirme',
               ),
             ],
           ),

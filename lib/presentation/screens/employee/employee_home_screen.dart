@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/core/errors/app_exception.dart';
 import 'package:wojob/core/utils/validators.dart';
 import 'package:wojob/presentation/widgets/app_text_field.dart';
 import 'package:wojob/presentation/widgets/primary_button.dart';
@@ -21,6 +22,7 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
   final _salaIdCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   String? _msg;
+  bool _loading = false;
 
   @override
   void dispose() {
@@ -33,12 +35,28 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
     final app = context.read<AppState>();
     final user = app.currentUser;
     if (user == null) return;
-    final ok = app.joinSala(_salaIdCtrl.text, usuarioId: user.id);
     setState(() {
-      _msg = ok
-          ? 'Solicitud enviada. Espera a que el administrador la acepte.'
-          : 'No se encontró la sala o ya tienes una solicitud pendiente.';
+      _loading = true;
+      _msg = null;
     });
+    try {
+      final ok = await app.joinSala(_salaIdCtrl.text, usuarioId: user.id);
+      if (mounted) {
+        setState(() {
+          _msg = ok
+              ? 'Solicitud enviada. Espera a que el administrador la acepte.'
+              : 'No se encontró la sala o ya tienes una solicitud pendiente.';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _msg = e is AppException ? e.message : e.toString();
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
@@ -118,8 +136,8 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
                 ),
                 const SizedBox(height: 16),
                 PrimaryButton(
-                  onPressed: _unirse,
-                  label: 'Enviar solicitud',
+                  onPressed: _loading ? null : _unirse,
+                  label: _loading ? 'Enviando...' : 'Enviar solicitud',
                 ),
                 if (_msg != null) ...[
                   const SizedBox(height: 12),
@@ -152,8 +170,8 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
                 ),
                 const SizedBox(height: 16),
                 PrimaryButton(
-                  onPressed: _unirse,
-                  label: 'Enviar solicitud para unirme',
+                  onPressed: _loading ? null : _unirse,
+                  label: _loading ? 'Enviando...' : 'Enviar solicitud para unirme',
                 ),
                 if (_msg != null) ...[
                   const SizedBox(height: 12),

@@ -22,11 +22,24 @@ class SupabaseStorageRepository implements StorageRepository {
       await _client.storage.from(bucket).uploadBinary(
             path,
             bytes,
-            fileOptions: sb.FileOptions(contentType: contentType, upsert: true),
+            fileOptions: sb.FileOptions(contentType: contentType),
           );
-      return _client.storage.from(bucket).getPublicUrl(path);
+      return path;
     } catch (e) {
       throw AppException('No se pudo subir la imagen a la nube.', cause: e);
+    }
+  }
+
+  @override
+  Future<String> createSignedUrl({
+    required String bucket,
+    required String path,
+  }) async {
+    try {
+      return await _client.storage.from(bucket).createSignedUrl(path, 3600);
+    } catch (e) {
+      throw AppException('No se pudo generar el enlace privado de la imagen.',
+          cause: e);
     }
   }
 }

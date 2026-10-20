@@ -33,6 +33,15 @@ class SupabaseHorarioRepository implements HorarioRepository {
   }
 
   @override
+  Future<List<Horario>> byEmpresa(String empresaId) async {
+    final rows =
+        await _client.from(_table).select().eq('empresa_id', empresaId);
+    return (rows as List)
+        .map((e) => Horario.fromMap(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
   Future<void> delete(String horarioId) async {
     await _client.from(_table).delete().eq('id', horarioId);
   }

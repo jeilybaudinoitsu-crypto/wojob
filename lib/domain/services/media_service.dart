@@ -1,4 +1,3 @@
-import 'dart:io' show File;
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -8,9 +7,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:wojob/core/config/app_config.dart';
 
 class CapturedPhoto {
-  const CapturedPhoto({required this.path, this.file});
+  const CapturedPhoto({required this.path, required this.source});
   final String path;
-  final File? file;
+  final XFile source;
 }
 
 /// Captura y prepara imágenes (cámara/galería) para enviarlas a la nube.
@@ -27,10 +26,7 @@ class MediaService {
         imageQuality: 90,
       );
       if (xfile == null) return null;
-      return CapturedPhoto(
-        path: xfile.path,
-        file: kIsWeb ? null : File(xfile.path),
-      );
+      return CapturedPhoto(path: xfile.path, source: xfile);
     } catch (e) {
       return null;
     }
@@ -41,11 +37,8 @@ class MediaService {
 
   /// Lee los bytes de una captura (para comprimir y subir).
   Future<Uint8List?> readBytes(CapturedPhoto photo) async {
-    if (kIsWeb) return null;
-    final file = photo.file;
-    if (file == null) return null;
     try {
-      return await file.readAsBytes();
+      return await photo.source.readAsBytes();
     } catch (_) {
       return null;
     }
