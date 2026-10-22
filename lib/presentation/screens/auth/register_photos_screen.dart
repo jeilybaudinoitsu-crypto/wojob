@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:wojob/data/models/tipo_usuario.dart';
-import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/presentation/state/auth_state.dart' as app_state;
 import 'package:wojob/domain/services/media_service.dart';
 import 'package:wojob/core/errors/app_exception.dart';
 import 'package:wojob/presentation/widgets/local_image.dart';
@@ -71,16 +71,16 @@ class _RegisterPhotosScreenState extends State<RegisterPhotosScreen> {
       _error = null;
     });
     try {
-      final app = context.read<AppState>();
+      final authState = context.read<app_state.AuthState>();
       final fotoBytes =
           _foto == null ? null : await _media.compressPhoto(_foto!);
       final cedulaBytes =
           _cedula == null ? null : await _media.compressPhoto(_cedula!);
       if ((_foto != null && fotoBytes == null) ||
           (_cedula != null && cedulaBytes == null)) {
-        throw const AppException('No se pudo leer una de las fotos seleccionadas.');
+        throw const ValidationException('No se pudo leer una de las fotos seleccionadas.');
       }
-      await app.register(
+      await authState.register(
         tipoUsuario: widget.tipoUsuario,
         nombreCompleto: widget.nombreCompleto,
         correo: widget.correo,
@@ -88,8 +88,6 @@ class _RegisterPhotosScreenState extends State<RegisterPhotosScreen> {
         idPersonal: widget.idPersonal,
         cargo: widget.cargo,
         password: widget.password,
-        fotoUrl: _foto?.path,
-        cedulaUrl: _cedula?.path,
         fotoBytes: fotoBytes,
         cedulaBytes: cedulaBytes,
       );

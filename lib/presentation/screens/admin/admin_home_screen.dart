@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/presentation/state/auth_state.dart' as app_state;
+import 'package:wojob/presentation/state/empresa_state.dart';
 import 'package:wojob/presentation/widgets/section_card.dart';
 import 'package:wojob/presentation/widgets/avatar.dart';
 import 'package:wojob/presentation/widgets/primary_button.dart';
@@ -16,11 +17,12 @@ class AdminHomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final state = context.watch<AppState>();
-    final user = state.currentUser;
+    final authState = context.watch<app_state.AuthState>();
+    final empresaState = context.watch<EmpresaState>();
+    final user = authState.currentUser;
     if (user == null) return const SizedBox.shrink();
 
-    final empresa = state.empresaById(user.empresaId);
+    final empresa = empresaState.empresaById(user.empresaId);
     final tieneSala = empresa != null;
 
     return Scaffold(

@@ -72,4 +72,18 @@ abstract class StorageRepository {
     required String bucket,
     required String path,
   });
+
+  /// Actualiza un archivo existente (sobrescribe).
+  Future<String> update({
+    required String bucket,
+    required String path,
+    required Uint8List bytes,
+    String contentType = 'image/jpeg',
+  });
+
+  /// Elimina un archivo.
+  Future<void> delete({
+    required String bucket,
+    required String path,
+  });
 }

@@ -4,7 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:wojob/data/models/empresa.dart';
 import 'package:wojob/data/models/tipo_asistencia.dart';
 import 'package:wojob/core/errors/app_exception.dart';
-import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/presentation/state/auth_state.dart' as app_state;
+import 'package:wojob/presentation/state/asistencia_state.dart';
 import 'package:wojob/domain/services/location_service.dart';
 import 'package:wojob/domain/services/media_service.dart';
 import 'package:wojob/core/utils/formatters.dart';
@@ -78,21 +79,20 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
       );
       return;
     }
-    final user = context.read<AppState>().currentUser;
+    final user = context.read<app_state.AuthState>().currentUser;
     if (user == null) return;
     setState(() => _loading = true);
     try {
       final photoBytes = await _media.compressPhoto(_foto!);
       if (photoBytes == null) {
-        throw const AppException('No se pudo leer la foto seleccionada.');
+        throw const ValidationException('No se pudo leer la foto seleccionada.');
       }
-      await context.read<AppState>().markAttendance(
+      await context.read<AsistenciaState>().markAttendance(
             empleadoId: user.id,
             empresaId: widget.empresa.id,
             tipo: widget.tipo,
             latitud: _geo!.latitude,
             longitud: _geo!.longitude,
-            fotoUrl: _foto!.path,
             fotoBytes: photoBytes,
           );
     } catch (e) {

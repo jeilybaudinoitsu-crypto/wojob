@@ -17,7 +17,7 @@ class SupabaseHorarioRepository implements HorarioRepository {
       await _client.from(_table).insert(horario.toMap());
       return horario;
     } catch (e) {
-      throw AppException('No se pudo asignar el turno.', cause: e);
+      throw UnknownException('No se pudo asignar el turno.', cause: e);
     }
   }
 

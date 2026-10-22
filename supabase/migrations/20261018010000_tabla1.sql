@@ -3,8 +3,8 @@
 -- ==========================================
 create table public.empresas (
     id uuid default gen_random_uuid() primary key,
-    -- ID autogenerado único para la sala (ej. NOR-4826)
-    id_sala text unique not null default ('NOR-' || lpad(floor(random() * 10000)::text, 4, '0')),
+    -- ID autogenerado único para la sala (ej. NOR-a1b2c3d4)
+    id_sala text unique not null,
     nombre_empresa text unique not null,
     direccion_empresa text unique not null,
     -- Contraseña de la empresa con la misma validación de seguridad

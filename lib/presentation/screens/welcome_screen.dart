@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/presentation/state/settings_state.dart';
 import 'package:wojob/presentation/widgets/primary_button.dart';
 import 'package:wojob/presentation/widgets/welcome_background.dart';
 import 'package:wojob/presentation/screens/auth/login_screen.dart';
@@ -70,7 +70,7 @@ class WelcomeScreen extends StatelessWidget {
                   label: 'Iniciar sesión',
                 ),
                 const SizedBox(height: 12),
-                Consumer<AppState>(
+                Consumer<SettingsState>(
                   builder: (context, state, _) => SwitchListTile.adaptive(
                     value: state.themeMode == ThemeMode.dark,
                     onChanged: (_) => state.toggleTheme(),

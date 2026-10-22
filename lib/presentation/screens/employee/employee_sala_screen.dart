@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 
 import 'package:wojob/data/models/empresa.dart';
 import 'package:wojob/data/models/tipo_asistencia.dart';
-import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/presentation/state/auth_state.dart' as app_state;
+import 'package:wojob/presentation/state/empresa_state.dart';
+import 'package:wojob/presentation/state/asistencia_state.dart';
 import 'package:wojob/presentation/widgets/section_card.dart';
 import 'package:wojob/presentation/screens/shared/schedule_view.dart';
 import 'package:wojob/presentation/screens/employee/mark_attendance_screen.dart';
@@ -16,12 +18,14 @@ class EmployeeSalaScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final state = context.watch<AppState>();
-    final user = state.currentUser;
+    final authState = context.watch<app_state.AuthState>();
+    final empresaState = context.watch<EmpresaState>();
+    final asistenciaState = context.watch<AsistenciaState>();
+    final user = authState.currentUser;
     if (user == null) return const SizedBox.shrink();
 
-    final horarios = state.horariosDeEmpleado(user.id);
-    final asistencias = state.historialDeEmpleado(user.id).take(6).toList();
+    final horarios = empresaState.horariosDeEmpleado(user.id);
+    final asistencias = asistenciaState.historialDeEmpleado(user.id).take(6).toList();
 
     return Scaffold(
       appBar: AppBar(

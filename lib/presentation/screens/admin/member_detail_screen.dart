@@ -4,7 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:wojob/data/models/empresa.dart';
 import 'package:wojob/data/models/perfil.dart';
 import 'package:wojob/data/models/tipo_asistencia.dart';
-import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/presentation/state/empresa_state.dart';
+import 'package:wojob/presentation/state/asistencia_state.dart';
 import 'package:wojob/core/utils/formatters.dart';
 import 'package:wojob/presentation/widgets/avatar.dart';
 import 'package:wojob/presentation/widgets/section_card.dart';
@@ -23,9 +24,10 @@ class MemberDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final state = context.watch<AppState>();
-    final horarios = state.horariosDeEmpleado(miembro.id);
-    final historial = state.historialDeEmpleado(miembro.id);
+    final empresaState = context.watch<EmpresaState>();
+    final asistenciaState = context.watch<AsistenciaState>();
+    final horarios = empresaState.horariosDeEmpleado(miembro.id);
+    final historial = asistenciaState.historialDeEmpleado(miembro.id);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Perfil del miembro')),

@@ -4,7 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:wojob/data/models/empresa.dart';
 import 'package:wojob/data/models/perfil.dart';
 import 'package:wojob/data/models/solicitud_sala.dart';
-import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/presentation/state/auth_state.dart' as app_state;
+import 'package:wojob/presentation/state/empresa_state.dart';
 import 'package:wojob/core/errors/app_exception.dart';
 import 'package:wojob/core/utils/formatters.dart';
 import 'package:wojob/presentation/widgets/avatar.dart';
@@ -18,8 +19,9 @@ class RequestsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final state = context.watch<AppState>();
-    final solicitudes = state.solicitudesParaAdmin(empresa.id);
+    final empresaState = context.watch<EmpresaState>();
+    final authState = context.watch<app_state.AuthState>();
+    final solicitudes = empresaState.solicitudesParaAdmin(empresa.id);
 
     if (solicitudes.isEmpty) {
       return Scaffold(
@@ -44,10 +46,10 @@ class RequestsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          _grupo(theme, state, 'Pendientes', pendientes),
+          _grupo(theme, empresaState, authState, 'Pendientes', pendientes),
           if (resueltas.isNotEmpty) ...[
             const SizedBox(height: 24),
-            _grupo(theme, state, 'Historial', resueltas),
+            _grupo(theme, empresaState, authState, 'Historial', resueltas),
           ],
         ],
       ),
@@ -56,7 +58,8 @@ class RequestsScreen extends StatelessWidget {
 
   Widget _grupo(
     ThemeData theme,
-    AppState state,
+    EmpresaState empresaState,
+    app_state.AuthState authState,
     String titulo,
     List<SolicitudSala> lista,
   ) {
@@ -81,25 +84,29 @@ class RequestsScreen extends StatelessWidget {
             style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
         const SizedBox(height: 12),
         for (final s in lista) ...[
-          _solicitudCard(state, s),
+          _solicitudCard(theme, empresaState, authState, s),
           const SizedBox(height: 12),
         ],
       ],
     );
   }
 
-  Perfil? _perfilPorId(AppState state, String id) {
-    for (final p in state.perfiles) {
+  Perfil? _perfilPorId(app_state.AuthState authState, String id) {
+    for (final p in authState.perfiles) {
       if (p.id == id) return p;
     }
     return null;
   }
 
-  Widget _solicitudCard(AppState state, SolicitudSala s) {
-    final perfil = _perfilPorId(state, s.usuarioId);
+  Widget _solicitudCard(
+    ThemeData theme,
+    EmpresaState empresaState,
+    app_state.AuthState authState,
+    SolicitudSala s,
+  ) {
+    final perfil = _perfilPorId(authState, s.usuarioId);
     return Builder(
       builder: (context) {
-        final theme = Theme.of(context);
         return Card(
           child: ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -113,7 +120,7 @@ class RequestsScreen extends StatelessWidget {
               '${perfil?.cargo ?? 'Solicitante'} · ${formatDateShort(s.createdAt)}',
             ),
             trailing: _estadoChip(theme, s.estado),
-            onTap: () => _abrirDetalle(context, theme, state, s, perfil),
+            onTap: () => _abrirDetalle(context, theme, empresaState, s, perfil),
           ),
         );
       },
@@ -147,7 +154,7 @@ class RequestsScreen extends StatelessWidget {
   void _abrirDetalle(
     BuildContext context,
     ThemeData theme,
-    AppState state,
+    EmpresaState empresaState,
     SolicitudSala s,
     Perfil? perfil,
   ) {
@@ -192,7 +199,7 @@ class RequestsScreen extends StatelessWidget {
                       child: OutlinedButton.icon(
                         onPressed: () async {
                           try {
-                            await state.rejectSolicitud(s.id);
+                            await empresaState.rejectSolicitud(s.id);
                             if (ctx.mounted) Navigator.pop(ctx);
                           } catch (e) {
                             if (context.mounted) {
@@ -219,7 +226,7 @@ class RequestsScreen extends StatelessWidget {
                       child: ElevatedButton.icon(
                         onPressed: () async {
                           try {
-                            await state.acceptSolicitud(s.id);
+                            await empresaState.acceptSolicitud(s.id);
                             if (ctx.mounted) Navigator.pop(ctx);
                           } catch (e) {
                             if (context.mounted) {

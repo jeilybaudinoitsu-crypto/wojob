@@ -26,7 +26,7 @@ class SupabaseStorageRepository implements StorageRepository {
           );
       return path;
     } catch (e) {
-      throw AppException('No se pudo subir la imagen a la nube.', cause: e);
+      throw StorageException('No se pudo subir la imagen a la nube.', cause: e);
     }
   }
 
@@ -38,8 +38,39 @@ class SupabaseStorageRepository implements StorageRepository {
     try {
       return await _client.storage.from(bucket).createSignedUrl(path, 3600);
     } catch (e) {
-      throw AppException('No se pudo generar el enlace privado de la imagen.',
+      throw StorageException('No se pudo generar el enlace privado de la imagen.',
           cause: e);
+    }
+  }
+
+  @override
+  Future<String> update({
+    required String bucket,
+    required String path,
+    required Uint8List bytes,
+    String contentType = 'image/jpeg',
+  }) async {
+    try {
+      await _client.storage.from(bucket).updateBinary(
+            path,
+            bytes,
+            fileOptions: sb.FileOptions(contentType: contentType),
+          );
+      return path;
+    } catch (e) {
+      throw StorageException('No se pudo actualizar la imagen.', cause: e);
+    }
+  }
+
+  @override
+  Future<void> delete({
+    required String bucket,
+    required String path,
+  }) async {
+    try {
+      await _client.storage.from(bucket).remove([path]);
+    } catch (e) {
+      throw StorageException('No se pudo eliminar la imagen.', cause: e);
     }
   }
 }

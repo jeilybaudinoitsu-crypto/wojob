@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:wojob/data/models/tipo_usuario.dart';
-import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/presentation/state/auth_state.dart' as app_state;
 import 'package:wojob/presentation/screens/welcome_screen.dart';
 import 'package:wojob/presentation/screens/employee/employee_home_screen.dart';
 import 'package:wojob/presentation/screens/admin/admin_home_screen.dart';
@@ -12,18 +12,18 @@ class HomeRouter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<AppState>();
+    final authState = context.watch<app_state.AuthState>();
     final Widget screen;
-    if (state.currentUser == null) {
+    if (authState.currentUser == null) {
       screen = const WelcomeScreen();
-    } else if (state.currentUser!.tipoUsuario == TipoUsuario.empleado) {
+    } else if (authState.currentUser!.tipoUsuario == TipoUsuario.empleado) {
       screen = const EmployeeHomeScreen();
     } else {
       screen = const AdminHomeScreen();
     }
 
-    final notice = state.isBackendEnabled
-        ? state.backendError
+    final notice = authState.isBackendEnabled
+        ? authState.backendError
         : 'Modo local: Supabase no está configurado. '
             'Los cambios no se guardan en la nube y se perderán al cerrar.';
     if (notice == null) return screen;

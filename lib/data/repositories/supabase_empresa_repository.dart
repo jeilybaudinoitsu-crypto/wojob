@@ -23,7 +23,7 @@ class SupabaseEmpresaRepository implements EmpresaRepository {
           .single();
       return Empresa.fromMap(data);
     } catch (e) {
-      throw AppException('No se pudo crear la sala.', cause: e);
+      throw UnknownException('No se pudo crear la sala.', cause: e);
     }
   }
 

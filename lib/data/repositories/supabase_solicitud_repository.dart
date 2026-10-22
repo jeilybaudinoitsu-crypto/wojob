@@ -17,7 +17,7 @@ class SupabaseSolicitudRepository implements SolicitudRepository {
       await _client.from(_table).insert(solicitud.toMap());
       return solicitud;
     } catch (e) {
-      throw AppException('No se pudo enviar la solicitud.', cause: e);
+      throw UnknownException('No se pudo enviar la solicitud.', cause: e);
     }
   }
 

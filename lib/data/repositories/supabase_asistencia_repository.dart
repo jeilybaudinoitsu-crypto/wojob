@@ -17,7 +17,7 @@ class SupabaseAsistenciaRepository implements AsistenciaRepository {
       await _client.from(_table).insert(asistencia.toMap());
       return asistencia;
     } catch (e) {
-      throw AppException('No se pudo registrar la asistencia.', cause: e);
+      throw UnknownException('No se pudo registrar la asistencia.', cause: e);
     }
   }
 

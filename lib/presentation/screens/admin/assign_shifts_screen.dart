@@ -4,7 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:wojob/data/models/dia_semana.dart';
 import 'package:wojob/data/models/empresa.dart';
 import 'package:wojob/core/errors/app_exception.dart';
-import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/presentation/state/auth_state.dart' as app_state;
+import 'package:wojob/presentation/state/empresa_state.dart';
 import 'package:wojob/core/utils/formatters.dart';
 import 'package:wojob/presentation/widgets/primary_button.dart';
 import 'package:wojob/presentation/widgets/section_card.dart';
@@ -53,13 +54,14 @@ class _AssignShiftsScreenState extends State<AssignShiftsScreen> {
       _error = null;
     });
     try {
-      await context.read<AppState>().assignShift(
-          empresaId: widget.empresa.id,
-          empleadoId: _empleadoId!,
-          diaSemana: _dia,
-          horaEntrada: _fmt(_entrada),
-          horaSalida: _fmt(_salida),
-        );
+      final empresaState = context.read<EmpresaState>();
+      await empresaState.assignShift(
+        empresaId: widget.empresa.id,
+        empleadoId: _empleadoId!,
+        diaSemana: _dia,
+        horaEntrada: _fmt(_entrada),
+        horaSalida: _fmt(_salida),
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Turno asignado (${_dia.label} ${_fmt(_entrada)}–${_fmt(_salida)})')),
@@ -75,7 +77,8 @@ class _AssignShiftsScreenState extends State<AssignShiftsScreen> {
 
   Future<void> _eliminar(String id) async {
     try {
-      await context.read<AppState>().removeShift(id);
+      final empresaState = context.read<EmpresaState>();
+      await empresaState.removeShift(id);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -90,8 +93,9 @@ class _AssignShiftsScreenState extends State<AssignShiftsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final state = context.watch<AppState>();
-    final empleados = state
+    final empresaState = context.watch<EmpresaState>();
+    final authState = context.watch<app_state.AuthState>();
+    final empleados = empresaState
         .miembrosDeEmpresa(widget.empresa.id)
         .where((p) => !p.isAdmin)
         .toList();
@@ -108,7 +112,7 @@ class _AssignShiftsScreenState extends State<AssignShiftsScreen> {
     }
 
     final seleccionado = _empleadoId ?? empleados.first.id;
-    final horarios = state
+    final horarios = empresaState
         .horariosDeEmpleado(seleccionado)
         .toList()
       ..sort((a, b) =>
@@ -185,7 +189,7 @@ class _AssignShiftsScreenState extends State<AssignShiftsScreen> {
           const SizedBox(height: 20),
           SectionCard(
             title: 'Horarios asignados',
-            subtitle: _nombreEmpleado(state, seleccionado),
+            subtitle: _nombreEmpleado(authState, seleccionado),
             children: [
               if (horarios.isEmpty)
                 Text('Este empleado no tiene horarios asignados.',
@@ -215,8 +219,8 @@ class _AssignShiftsScreenState extends State<AssignShiftsScreen> {
     );
   }
 
-  String _nombreEmpleado(AppState state, String id) {
-    for (final p in state.perfiles) {
+  String _nombreEmpleado(app_state.AuthState authState, String id) {
+    for (final p in authState.perfiles) {
       if (p.id == id) return '${p.nombreCompleto} (${p.idPersonal})';
     }
     return '';

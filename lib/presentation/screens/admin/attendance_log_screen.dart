@@ -4,7 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:wojob/data/models/asistencia.dart';
 import 'package:wojob/data/models/empresa.dart';
 import 'package:wojob/data/models/tipo_asistencia.dart';
-import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/presentation/state/auth_state.dart' as app_state;
+import 'package:wojob/presentation/state/asistencia_state.dart';
 import 'package:wojob/core/utils/formatters.dart';
 import 'package:wojob/presentation/widgets/empty_state.dart';
 import 'package:wojob/presentation/widgets/avatar.dart';
@@ -25,8 +26,9 @@ class _AttendanceLogScreenState extends State<AttendanceLogScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final state = context.watch<AppState>();
-    final todas = state.asistenciasDeEmpresa(widget.empresa.id);
+    final asistenciaState = context.watch<AsistenciaState>();
+    final authState = context.watch<app_state.AuthState>();
+    final todas = asistenciaState.asistenciasDeEmpresa(widget.empresa.id);
     final lista = _filtro == null
         ? todas
         : todas.where((a) => a.tipo == _filtro).toList();
@@ -71,7 +73,7 @@ class _AttendanceLogScreenState extends State<AttendanceLogScreen> {
                     itemCount: lista.length,
                     separatorBuilder: (context, index) =>
                         const SizedBox(height: 12),
-                    itemBuilder: (_, i) => _card(context, theme, state, lista[i]),
+                    itemBuilder: (_, i) => _card(context, theme, authState, lista[i]),
                   ),
           ),
         ],
@@ -82,12 +84,12 @@ class _AttendanceLogScreenState extends State<AttendanceLogScreen> {
   Widget _card(
     BuildContext context,
     ThemeData theme,
-    AppState state,
+    app_state.AuthState authState,
     Asistencia a,
   ) {
     String nombre = 'Empleado';
     String? foto;
-    for (final p in state.perfiles) {
+    for (final p in authState.perfiles) {
       if (p.id == a.empleadoId) {
         nombre = p.nombreCompleto;
         foto = p.fotoUrl;

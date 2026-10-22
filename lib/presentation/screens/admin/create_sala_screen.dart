@@ -3,7 +3,8 @@ import 'package:provider/provider.dart';
 
 import 'package:wojob/data/models/empresa.dart';
 import 'package:wojob/core/errors/app_exception.dart';
-import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/presentation/state/auth_state.dart' as app_state;
+import 'package:wojob/presentation/state/empresa_state.dart';
 import 'package:wojob/core/utils/validators.dart';
 import 'package:wojob/presentation/widgets/app_text_field.dart';
 import 'package:wojob/presentation/widgets/primary_button.dart';
@@ -42,11 +43,16 @@ class _CreateSalaScreenState extends State<CreateSalaScreen> {
       _error = null;
     });
     try {
-      final empresa = await context.read<AppState>().createSala(
-          nombreEmpresa: _nombreCtrl.text,
-          direccionEmpresa: _direccionCtrl.text,
-          passwordHash: _passCtrl.text,
-        );
+      final authState = context.read<app_state.AuthState>();
+      final empresaState = context.read<EmpresaState>();
+      final user = authState.currentUser;
+      if (user == null) return;
+      final empresa = await empresaState.createSala(
+        nombreEmpresa: _nombreCtrl.text,
+        direccionEmpresa: _direccionCtrl.text,
+        passwordHash: _passCtrl.text,
+        currentUserId: user.id,
+      );
       if (mounted) setState(() => _creada = empresa);
     } catch (e) {
       if (mounted) {

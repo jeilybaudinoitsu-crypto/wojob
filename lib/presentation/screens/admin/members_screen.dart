@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'package:wojob/data/models/empresa.dart';
 import 'package:wojob/data/models/perfil.dart';
-import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/presentation/state/empresa_state.dart';
 import 'package:wojob/presentation/widgets/avatar.dart';
 import 'package:wojob/presentation/widgets/section_card.dart';
 import 'package:wojob/presentation/screens/admin/member_detail_screen.dart';
@@ -16,8 +16,8 @@ class MembersScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final state = context.watch<AppState>();
-    final miembros = state.miembrosDeEmpresa(empresa.id);
+    final empresaState = context.watch<EmpresaState>();
+    final miembros = empresaState.miembrosDeEmpresa(empresa.id);
     final empleados = miembros.where((m) => !m.isAdmin).toList();
     final admins = miembros.where((m) => m.isAdmin).toList();
 

@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 
 import 'package:wojob/data/models/empresa.dart';
 import 'package:wojob/data/models/solicitud_sala.dart';
-import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/presentation/state/auth_state.dart' as app_state;
+import 'package:wojob/presentation/state/empresa_state.dart';
+import 'package:wojob/presentation/state/asistencia_state.dart';
 import 'package:wojob/presentation/widgets/section_card.dart';
 import 'package:wojob/presentation/widgets/copyable_field.dart';
 import 'package:wojob/presentation/screens/shared/profile_screen.dart';
@@ -21,15 +23,18 @@ class AdminSalaScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final state = context.watch<AppState>();
-    final miembros = state.miembrosDeEmpresa(empresa.id);
+    final authState = context.watch<app_state.AuthState>();
+    final empresaState = context.watch<EmpresaState>();
+    final asistenciaState = context.watch<AsistenciaState>();
+
+    final miembros = empresaState.miembrosDeEmpresa(empresa.id);
     final empleados = miembros.where((m) => !m.isAdmin).toList();
     final admins = miembros.where((m) => m.isAdmin).toList();
-    final solicitudesPend = state
+    final solicitudesPend = empresaState
         .solicitudesParaAdmin(empresa.id)
         .where((s) => s.estado == EstadoSolicitud.pendiente)
         .toList();
-    final asistencias = state.asistenciasDeEmpresa(empresa.id);
+    final asistencias = asistenciaState.asistenciasDeEmpresa(empresa.id);
 
     return Scaffold(
       drawer: _drawer(context, empresa),
@@ -194,8 +199,8 @@ class AdminSalaScreen extends StatelessWidget {
 
   Widget _drawer(BuildContext context, Empresa empresa) {
     final theme = Theme.of(context);
-    final state = context.read<AppState>();
-    final user = state.currentUser;
+    final authState = context.read<app_state.AuthState>();
+    final user = authState.currentUser;
     return Drawer(
       child: SafeArea(
         child: Column(
@@ -260,7 +265,7 @@ class AdminSalaScreen extends StatelessWidget {
                   style: TextStyle(color: theme.colorScheme.error)),
               onTap: () {
                 Navigator.of(context).pop();
-                context.read<AppState>().logout();
+                authState.logout();
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (_) => const WelcomeScreen()),
                   (route) => false,

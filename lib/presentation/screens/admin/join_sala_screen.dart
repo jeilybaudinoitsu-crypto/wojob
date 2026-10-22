@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:wojob/presentation/state/app_state.dart';
+import 'package:wojob/presentation/state/auth_state.dart' as app_state;
+import 'package:wojob/presentation/state/empresa_state.dart';
 import 'package:wojob/core/errors/app_exception.dart';
 import 'package:wojob/core/utils/validators.dart';
 import 'package:wojob/presentation/widgets/app_text_field.dart';
@@ -29,15 +30,16 @@ class _JoinSalaScreenState extends State<JoinSalaScreen> {
 
   Future<void> _unirse() async {
     if (!_formKey.currentState!.validate()) return;
-    final app = context.read<AppState>();
-    final user = app.currentUser;
+    final authState = context.read<app_state.AuthState>();
+    final empresaState = context.read<EmpresaState>();
+    final user = authState.currentUser;
     if (user == null) return;
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final ok = await app.joinSala(_salaIdCtrl.text, usuarioId: user.id);
+      final ok = await empresaState.joinSala(_salaIdCtrl.text, usuarioId: user.id);
       if (!mounted) return;
       if (!ok) {
         setState(() {

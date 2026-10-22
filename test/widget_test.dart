@@ -1,8 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:wojob/main.dart';
+import 'package:wojob/core/di/service_locator.dart';
 
 void main() {
+  setUpAll(() async {
+    await setupDependencies(isTest: true);
+  });
+
+  tearDownAll(() {
+    resetDependencies();
+  });
+
   testWidgets('La pantalla de bienvenida muestra las acciones de acceso',
       (WidgetTester tester) async {
     await tester.pumpWidget(const WoJobApp());
