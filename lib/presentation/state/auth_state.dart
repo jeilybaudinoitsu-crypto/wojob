@@ -19,8 +19,8 @@ class AuthState extends ChangeNotifier {
   AuthState({
     AuthRepository? authRepository,
     StorageRepository? storageRepository,
-  })  : _authRepository = authRepository,
-        _storageRepository = storageRepository {
+  }) : _authRepository = authRepository,
+       _storageRepository = storageRepository {
     if (!isBackendEnabled) _seed();
   }
 
@@ -58,12 +58,16 @@ class AuthState extends ChangeNotifier {
     try {
       Perfil? profile;
       if (isBackendEnabled) {
-        profile = await _authRepository!.signIn(correo: credential.trim(), password: password);
+        profile = await _authRepository!.signIn(
+          correo: credential.trim(),
+          password: password,
+        );
       } else {
         final q = credential.trim().toLowerCase();
         for (final p in _perfiles.values) {
           if (!p.estadoActivo) continue;
-          final coincide = p.correo.trim().toLowerCase() == q ||
+          final coincide =
+              p.correo.trim().toLowerCase() == q ||
               p.telefono.trim() == credential.trim() ||
               p.idPersonal.trim().toLowerCase() == q;
           if (!coincide) continue;
@@ -141,6 +145,28 @@ class AuthState extends ChangeNotifier {
     return profile.copyWith(fotoUrl: photoUrl, cedulaUrl: identityUrl);
   }
 
+  /// Inicia el registro y devuelve si Supabase requiere confirmar el correo.
+  Future<bool> sendRegistrationCode({
+    required String email,
+    required String password,
+  }) async {
+    if (!isBackendEnabled) return false;
+    return _authRepository!.sendSignUpCode(email: email, password: password);
+  }
+
+  /// Verifica el código de confirmación del registro.
+  Future<void> verifyRegistrationCode({
+    required String email,
+    required String code,
+  }) async {
+    if (!isBackendEnabled) {
+      throw const AuthException(
+        'La verificación por correo solo está disponible con Supabase.',
+      );
+    }
+    await _authRepository!.verifySignUpCode(email: email, code: code);
+  }
+
   /// Registra un usuario nuevo.
   Future<Perfil> register({
     required TipoUsuario tipoUsuario,
@@ -176,7 +202,7 @@ class AuthState extends ChangeNotifier {
 
       Perfil profile;
       if (isBackendEnabled) {
-        profile = await _authRepository!.signUp(perfil: nuevo, password: password);
+        profile = await _authRepository!.createProfile(nuevo);
         final photoPath = fotoBytes == null
             ? null
             : await _storageRepository!.upload(
@@ -193,10 +219,7 @@ class AuthState extends ChangeNotifier {
               );
         if (photoPath != null || identityPath != null) {
           profile = await _authRepository!.updatePhotos(
-            profile.copyWith(
-              fotoUrl: photoPath,
-              cedulaUrl: identityPath,
-            ),
+            profile.copyWith(fotoUrl: photoPath, cedulaUrl: identityPath),
           );
         }
         profile = await _hydrateProfile(profile);
@@ -224,6 +247,39 @@ class AuthState extends ChangeNotifier {
     if (isBackendEnabled) await _authRepository!.signOut();
     currentUser = null;
     notifyListeners();
+  }
+
+  /// Envía código OTP por correo para restablecer la contraseña (solo backend).
+  Future<void> sendPasswordResetEmail(String email) async {
+    if (!isBackendEnabled || _authRepository == null) {
+      throw const AuthException(
+        'Recuperación de contraseña solo disponible con Supabase.',
+      );
+    }
+    await _authRepository.sendPasswordResetEmail(email);
+  }
+
+  /// Verifica el código OTP enviado por correo.
+  Future<void> verifyPasswordResetCode({
+    required String email,
+    required String code,
+  }) async {
+    if (!isBackendEnabled || _authRepository == null) {
+      throw const AuthException(
+        'Recuperación de contraseña solo disponible con Supabase.',
+      );
+    }
+    await _authRepository.verifyPasswordResetCode(email: email, code: code);
+  }
+
+  /// Actualiza la contraseña tras la verificación del código.
+  Future<void> updatePassword({required String newPassword}) async {
+    if (!isBackendEnabled || _authRepository == null) {
+      throw const AuthException(
+        'Recuperación de contraseña solo disponible con Supabase.',
+      );
+    }
+    await _authRepository.updatePassword(newPassword: newPassword);
   }
 
   Future<Perfil?> findById(String userId) async {

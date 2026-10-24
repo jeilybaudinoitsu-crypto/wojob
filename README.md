@@ -92,11 +92,54 @@ La ubicación que captura la app es GPS (`latitud`/`longitud`), no la dirección
 IP del dispositivo.
 
 La contraseña de la cuenta **no** se guarda en `perfiles`: la gestiona
-**Supabase Auth** (`auth.users`). Para que el registro desde la app inserte el
-perfil y suba las fotos en el mismo paso, en desarrollo desactiva
-**Authentication → Providers → Email → Confirm email**. Con confirmación
-activada, Supabase no entrega una sesión durante el registro y la app no puede
-insertar el perfil ni subir archivos hasta que el usuario inicie sesión.
+**Supabase Auth** (`auth.users`). Para exigir la verificación por código durante
+el registro, activa **Authentication → Sign In / Providers → Email → Confirm
+email**. Después de validar el código en la app, se crea el perfil y se suben
+las fotos. Si desactivas esa opción, Supabase no enviará el código de registro
+y la app completará el registro sin ese paso.
+
+Configura la longitud del OTP de Supabase en **8** (`mailer_otp_length`) para
+que coincida con los campos de la app. Si tu panel no muestra esta opción,
+actualiza la configuración de Auth mediante la Management API:
+
+```bash
+curl -X PATCH "https://api.supabase.com/v1/projects/<PROJECT_REF>/config/auth" \
+  -H "Authorization: Bearer <ACCESS_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"mailer_otp_length": 8}'
+```
+
+Usa un token de acceso con permisos de configuración del proyecto; no lo
+incluyas en la app ni en el repositorio. Después, para que el correo de
+registro incluya el código en vez del enlace, abre **Authentication → Emails →
+Confirm signup** y usa `{{ .Token }}` en el cuerpo, por ejemplo:
+
+```html
+<h2>Confirma tu correo</h2>
+<p>Ingresa este código de ocho dígitos en la aplicación:</p>
+<p><strong>{{ .Token }}</strong></p>
+```
+
+La app verifica el código como OTP de registro antes de crear el perfil. Si el
+cuerpo de la plantilla está bloqueado, configura primero un SMTP personalizado
+desde esa misma sección de Emails. La plantilla **Reset password** es
+independiente; también debe usar `{{ .Token }}` para la recuperación de
+contraseña descrita a continuación.
+
+Para que la recuperación envíe un código de ocho dígitos en vez de un enlace,
+abre **Authentication → Emails → Reset password** en Supabase y
+reemplaza el enlace que use `{{ .ConfirmationURL }}` por el código
+`{{ .Token }}`. Por ejemplo:
+
+```html
+<h2>Restablecer contraseña</h2>
+<p>Ingresa este código de ocho dígitos en la aplicación:</p>
+<p><strong>{{ .Token }}</strong></p>
+```
+
+La app valida el código como OTP de recuperación antes de permitir cambiar la
+contraseña. Si la plantilla sigue usando `{{ .ConfirmationURL }}`, el correo
+seguirá incluyendo el enlace de recuperación predeterminado.
 
 En **Storage → New bucket**, crea estos buckets como **privados**:
 

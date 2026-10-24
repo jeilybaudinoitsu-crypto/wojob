@@ -19,8 +19,20 @@ abstract class AuthRepository {
 
   Future<Perfil?> restoreSession();
 
-  /// Crea la cuenta (Auth) y el perfil asociado.
-  Future<Perfil> signUp({required Perfil perfil, required String password});
+  /// Envía el código de confirmación al correo y devuelve si debe verificarse.
+  Future<bool> sendSignUpCode({
+    required String email,
+    required String password,
+  });
+
+  /// Verifica el código de confirmación del registro.
+  Future<void> verifySignUpCode({
+    required String email,
+    required String code,
+  });
+
+  /// Crea el perfil de la cuenta ya autenticada.
+  Future<Perfil> createProfile(Perfil perfil);
 
   /// Inicia sesión y devuelve el perfil del usuario.
   Future<Perfil?> signIn({required String correo, required String password});
@@ -31,6 +43,18 @@ abstract class AuthRepository {
   Future<Perfil> updateEmpresa(String userId, String? empresaId);
 
   Future<void> signOut();
+
+  /// Envía un código OTP de recuperación de contraseña al correo.
+  Future<void> sendPasswordResetEmail(String email);
+
+  /// Verifica el código OTP enviado por correo para recuperación.
+  Future<void> verifyPasswordResetCode({
+    required String email,
+    required String code,
+  });
+
+  /// Actualiza la contraseña tras verificar el código (usuario autenticado).
+  Future<void> updatePassword({required String newPassword});
 }
 
 abstract class EmpresaRepository {

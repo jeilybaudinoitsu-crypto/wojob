@@ -1,4 +1,6 @@
 class Validators {
+  static const int otpLength = 8;
+
   static String? required(String? value, [String msg = 'Campo obligatorio']) {
     if (value == null || value.trim().isEmpty) return msg;
     return null;

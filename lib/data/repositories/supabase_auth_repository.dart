@@ -68,29 +68,70 @@ class SupabaseAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<Perfil> signUp({
-    required Perfil perfil,
+  Future<bool> sendSignUpCode({
+    required String email,
     required String password,
   }) async {
     try {
       final res = await _client.auth.signUp(
-        email: perfil.correo,
+        email: email.trim(),
         password: password,
       );
-      final authUser = res.user;
-      if (authUser == null) {
+      if (res.user == null) {
         throw const AuthException('No se pudo crear la cuenta en Supabase.');
       }
-      if (res.session == null) {
-        await _client.auth.admin.deleteUser(authUser.id);
+      return res.session == null;
+    } on AppException {
+      rethrow;
+    } on sb.AuthException catch (e) {
+      throw AuthException(_translateAuthError(e.message), cause: e);
+    } catch (e) {
+      throw AuthException('No se pudo iniciar el registro.', cause: e);
+    }
+  }
+
+  @override
+  Future<void> verifySignUpCode({
+    required String email,
+    required String code,
+  }) async {
+    try {
+      await _client.auth.verifyOTP(
+        email: email.trim(),
+        token: code.trim(),
+        type: sb.OtpType.signup,
+      );
+    } on sb.AuthException catch (e) {
+      throw AuthException(e.message, cause: e);
+    } catch (e) {
+      throw AuthException(
+        'El código de registro no es válido o ha expirado.',
+        cause: e,
+      );
+    }
+  }
+
+  @override
+  Future<Perfil> createProfile(Perfil perfil) async {
+    try {
+      final user = _client.auth.currentUser;
+      if (user == null) {
         throw const AuthException(
-          'La cuenta se creó, pero Supabase no inició sesión. '
-          'Activa la confirmación de correo mediante un trigger de perfil '
-          'o desactívala para permitir completar el registro desde la app.',
+          'Verifica primero el código enviado a tu correo.',
         );
       }
 
-      final row = perfil.toMap()..['id'] = authUser.id;
+      final existing = await _client
+          .from(_table)
+          .select()
+          .eq('id', user.id)
+          .maybeSingle();
+      if (existing != null) {
+        _current = Perfil.fromMap(existing);
+        return _current!;
+      }
+
+      final row = perfil.toMap()..['id'] = user.id;
       await _client.from(_table).insert(row);
 
       _current = Perfil.fromMap(row);
@@ -100,7 +141,7 @@ class SupabaseAuthRepository implements AuthRepository {
     } on sb.AuthException catch (e) {
       throw AuthException(_translateAuthError(e.message), cause: e);
     } catch (e) {
-      throw AuthException('Error al registrar la cuenta.', cause: e);
+      throw AuthException('Error al crear el perfil.', cause: e);
     }
   }
 
@@ -205,5 +246,47 @@ class SupabaseAuthRepository implements AuthRepository {
   Future<void> signOut() async {
     await _client.auth.signOut();
     _current = null;
+  }
+
+  @override
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _client.auth.resetPasswordForEmail(email.trim());
+    } on sb.AuthException catch (e) {
+      throw AuthException(e.message, cause: e);
+    } catch (e) {
+      throw AuthException('No se pudo enviar el código de recuperación.', cause: e);
+    }
+  }
+
+  @override
+  Future<void> verifyPasswordResetCode({
+    required String email,
+    required String code,
+  }) async {
+    try {
+      await _client.auth.verifyOTP(
+        email: email.trim(),
+        token: code.trim(),
+        type: sb.OtpType.recovery,
+      );
+    } on sb.AuthException catch (e) {
+      throw AuthException(e.message, cause: e);
+    } catch (e) {
+      throw AuthException('El código de verificación no es válido o ha expirado.', cause: e);
+    }
+  }
+
+  @override
+  Future<void> updatePassword({required String newPassword}) async {
+    try {
+      await _client.auth.updateUser(
+        sb.UserAttributes(password: newPassword),
+      );
+    } on sb.AuthException catch (e) {
+      throw AuthException(e.message, cause: e);
+    } catch (e) {
+      throw AuthException('No se pudo actualizar la contraseña.', cause: e);
+    }
   }
 }
