@@ -51,8 +51,18 @@ class _CreateSalaScreenState extends State<CreateSalaScreen> {
         nombreEmpresa: _nombreCtrl.text,
         direccionEmpresa: _direccionCtrl.text,
         passwordHash: _passCtrl.text,
-        currentUserId: user.id,
       );
+      if (authState.isBackendEnabled) {
+        final updatedProfile = await authState.restoreSession();
+        if (updatedProfile?.empresaId != empresa.id) {
+          throw const AuthException(
+            'La sala se creó, pero no quedó vinculada al administrador. '
+            'Ejecuta supabase/room_access_policies.sql en el SQL Editor.',
+          );
+        }
+      } else {
+        await authState.updateEmpresa(user.id, empresa.id);
+      }
       if (mounted) setState(() => _creada = empresa);
     } catch (e) {
       if (mounted) {

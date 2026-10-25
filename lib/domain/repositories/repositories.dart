@@ -19,20 +19,11 @@ abstract class AuthRepository {
 
   Future<Perfil?> restoreSession();
 
-  /// Envía el código de confirmación al correo y devuelve si debe verificarse.
-  Future<bool> sendSignUpCode({
-    required String email,
+  /// Registra la cuenta de Auth y obtiene el perfil creado por el trigger.
+  Future<Perfil> registerAccount({
+    required Perfil perfil,
     required String password,
   });
-
-  /// Verifica el código de confirmación del registro.
-  Future<void> verifySignUpCode({
-    required String email,
-    required String code,
-  });
-
-  /// Crea el perfil de la cuenta ya autenticada.
-  Future<Perfil> createProfile(Perfil perfil);
 
   /// Inicia sesión y devuelve el perfil del usuario.
   Future<Perfil?> signIn({required String correo, required String password});
@@ -66,6 +57,10 @@ abstract class EmpresaRepository {
 
 abstract class SolicitudRepository {
   Future<SolicitudSala> create(SolicitudSala solicitud);
+  Future<bool> hasPending({
+    required String empresaId,
+    required String usuarioId,
+  });
   Future<List<SolicitudSala>> byEmpresa(String empresaId);
   Future<void> updateEstado(String solicitudId, EstadoSolicitud estado);
 }

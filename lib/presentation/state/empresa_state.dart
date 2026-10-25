@@ -19,10 +19,10 @@ class EmpresaState extends ChangeNotifier {
     AuthRepository? authRepository,
     SolicitudRepository? solicitudRepository,
     HorarioRepository? horarioRepository,
-  })  : _empresaRepository = empresaRepository,
-        _authRepository = authRepository,
-        _solicitudRepository = solicitudRepository,
-        _horarioRepository = horarioRepository {
+  }) : _empresaRepository = empresaRepository,
+       _authRepository = authRepository,
+       _solicitudRepository = solicitudRepository,
+       _horarioRepository = horarioRepository {
     if (!isBackendEnabled) _seed();
   }
 
@@ -92,10 +92,12 @@ class EmpresaState extends ChangeNotifier {
         _perfiles[member.id] = member;
       }
 
-      for (final solicitud in await _solicitudRepository!.byEmpresa(empresaId)) {
+      for (final solicitud in await _solicitudRepository!.byEmpresa(
+        empresaId,
+      )) {
         _solicitudes[solicitud.id] = solicitud;
         if (!_perfiles.containsKey(solicitud.usuarioId)) {
-          final applicant = await _authRepository!.findById(solicitud.usuarioId);
+          final applicant = await _authRepository.findById(solicitud.usuarioId);
           if (applicant != null) {
             _perfiles[applicant.id] = applicant;
           }
@@ -118,7 +120,6 @@ class EmpresaState extends ChangeNotifier {
     required String nombreEmpresa,
     required String direccionEmpresa,
     required String passwordHash,
-    required String currentUserId,
   }) async {
     isLoading = true;
     backendError = null;
@@ -134,17 +135,17 @@ class EmpresaState extends ChangeNotifier {
         passwordHash: passwordHash,
         createdAt: DateTime.now(),
       );
-      final stored = isBackendEnabled ? await _empresaRepository!.create(emp) : emp;
+      final stored = isBackendEnabled
+          ? await _empresaRepository!.create(emp)
+          : emp;
       _empresas[stored.id] = stored;
       currentEmpresa = stored;
 
-      if (isBackendEnabled) {
-        await _authRepository!.updateEmpresa(currentUserId, stored.id);
-      }
-
       return stored;
     } catch (e) {
-      backendError = e is AppException ? e.message : 'No se pudo crear la sala.';
+      backendError = e is AppException
+          ? e.message
+          : 'No se pudo crear la sala.';
       throw UnknownException(backendError!, cause: e);
     } finally {
       isLoading = false;
@@ -168,7 +169,9 @@ class EmpresaState extends ChangeNotifier {
       _empresas[emp.id] = emp;
       return await sendSolicitud(emp.id, usuarioId);
     } catch (e) {
-      backendError = e is AppException ? e.message : 'Error al unirse a la sala.';
+      backendError = e is AppException
+          ? e.message
+          : 'Error al unirse a la sala.';
       throw UnknownException(backendError!, cause: e);
     } finally {
       isLoading = false;
@@ -179,13 +182,18 @@ class EmpresaState extends ChangeNotifier {
   Future<bool> sendSolicitud(String empresaId, String usuarioId) async {
     final empresaExiste = _empresas.containsKey(empresaId);
     final user = _perfiles[usuarioId];
-    if (!empresaExiste || user == null) return false;
-    final yaExiste = _solicitudes.values.any(
-      (s) =>
-          s.empresaId == empresaId &&
-          s.usuarioId == usuarioId &&
-          s.estado == EstadoSolicitud.pendiente,
-    );
+    if (!isBackendEnabled && (!empresaExiste || user == null)) return false;
+    final yaExiste = isBackendEnabled
+        ? await _solicitudRepository!.hasPending(
+            empresaId: empresaId,
+            usuarioId: usuarioId,
+          )
+        : _solicitudes.values.any(
+            (s) =>
+                s.empresaId == empresaId &&
+                s.usuarioId == usuarioId &&
+                s.estado == EstadoSolicitud.pendiente,
+          );
     if (yaExiste) return false;
     final id = _uuid.v4();
     final s = SolicitudSala(
@@ -199,6 +207,13 @@ class EmpresaState extends ChangeNotifier {
     _solicitudes[stored.id] = stored;
     notifyListeners();
     return true;
+  }
+
+  Perfil? perfilById(String userId) {
+    for (final profile in _perfiles.values) {
+      if (profile.id == userId) return profile;
+    }
+    return null;
   }
 
   List<SolicitudSala> solicitudesParaAdmin(String empresaId) {
@@ -224,18 +239,26 @@ class EmpresaState extends ChangeNotifier {
 
       if (isBackendEnabled) {
         await _authRepository!.updateEmpresa(s.usuarioId, s.empresaId);
-        await _solicitudRepository!.updateEstado(solicitudId, EstadoSolicitud.aceptada);
+        await _solicitudRepository!.updateEstado(
+          solicitudId,
+          EstadoSolicitud.aceptada,
+        );
       }
       _solicitudes[solicitudId] = s.copyWith(estado: EstadoSolicitud.aceptada);
 
       final user = _perfiles[s.usuarioId];
       if (user != null) {
-        _perfiles[user.id] = user.copyWith(empresaId: s.empresaId, clearEmpresa: false);
+        _perfiles[user.id] = user.copyWith(
+          empresaId: s.empresaId,
+          clearEmpresa: false,
+        );
       }
       notifyListeners();
       return true;
     } catch (e) {
-      backendError = e is AppException ? e.message : 'Error al aceptar solicitud.';
+      backendError = e is AppException
+          ? e.message
+          : 'Error al aceptar solicitud.';
       throw UnknownException(backendError!, cause: e);
     } finally {
       isLoading = false;
@@ -252,13 +275,18 @@ class EmpresaState extends ChangeNotifier {
       final s = _solicitudes[solicitudId];
       if (s == null) return false;
       if (isBackendEnabled) {
-        await _solicitudRepository!.updateEstado(solicitudId, EstadoSolicitud.rechazada);
+        await _solicitudRepository!.updateEstado(
+          solicitudId,
+          EstadoSolicitud.rechazada,
+        );
       }
       _solicitudes[solicitudId] = s.copyWith(estado: EstadoSolicitud.rechazada);
       notifyListeners();
       return true;
     } catch (e) {
-      backendError = e is AppException ? e.message : 'Error al rechazar solicitud.';
+      backendError = e is AppException
+          ? e.message
+          : 'Error al rechazar solicitud.';
       throw UnknownException(backendError!, cause: e);
     } finally {
       isLoading = false;
@@ -294,7 +322,9 @@ class EmpresaState extends ChangeNotifier {
       notifyListeners();
       return stored;
     } catch (e) {
-      backendError = e is AppException ? e.message : 'No se pudo asignar el turno.';
+      backendError = e is AppException
+          ? e.message
+          : 'No se pudo asignar el turno.';
       throw UnknownException(backendError!, cause: e);
     } finally {
       isLoading = false;

@@ -23,6 +23,39 @@ class RequestsScreen extends StatelessWidget {
     final authState = context.watch<app_state.AuthState>();
     final solicitudes = empresaState.solicitudesParaAdmin(empresa.id);
 
+    if (empresaState.isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Solicitudes')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (solicitudes.isEmpty && empresaState.backendError != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Solicitudes')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'No se pudieron cargar las solicitudes: '
+                  '${empresaState.backendError}',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => empresaState.loadEmpresaData(empresa.id),
+                  child: const Text('Reintentar'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     if (solicitudes.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text('Solicitudes')),
@@ -104,7 +137,8 @@ class RequestsScreen extends StatelessWidget {
     app_state.AuthState authState,
     SolicitudSala s,
   ) {
-    final perfil = _perfilPorId(authState, s.usuarioId);
+    final perfil = empresaState.perfilById(s.usuarioId) ??
+        _perfilPorId(authState, s.usuarioId);
     return Builder(
       builder: (context) {
         return Card(

@@ -16,9 +16,34 @@ class SupabaseSolicitudRepository implements SolicitudRepository {
     try {
       await _client.from(_table).insert(solicitud.toMap());
       return solicitud;
+    } on sb.PostgrestException catch (e) {
+      if (e.code == '42501') {
+        throw PermissionException(
+          'Supabase bloqueó la solicitud. Ejecuta '
+          'supabase/room_access_policies.sql en el SQL Editor.',
+          cause: e,
+        );
+      }
+      throw UnknownException('No se pudo enviar la solicitud: ${e.message}', cause: e);
     } catch (e) {
       throw UnknownException('No se pudo enviar la solicitud.', cause: e);
     }
+  }
+
+  @override
+  Future<bool> hasPending({
+    required String empresaId,
+    required String usuarioId,
+  }) async {
+    final row = await _client
+        .from(_table)
+        .select('id')
+        .eq('empresa_id', empresaId)
+        .eq('usuario_id', usuarioId)
+        .eq('estado', EstadoSolicitud.pendiente.dbValue)
+        .limit(1)
+        .maybeSingle();
+    return row != null;
   }
 
   @override

@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'package:wojob/data/models/tipo_usuario.dart';
 import 'package:wojob/presentation/state/auth_state.dart' as app_state;
 import 'package:wojob/domain/services/media_service.dart';
 import 'package:wojob/core/errors/app_exception.dart';
-import 'package:wojob/core/utils/validators.dart';
 import 'package:wojob/presentation/widgets/local_image.dart';
 import 'package:wojob/presentation/widgets/primary_button.dart';
 import 'package:wojob/presentation/widgets/section_card.dart';
@@ -40,17 +38,8 @@ class _RegisterPhotosScreenState extends State<RegisterPhotosScreen> {
   final _media = MediaService();
   CapturedPhoto? _foto;
   CapturedPhoto? _cedula;
-  final _codeCtrl = TextEditingController();
   bool _loading = false;
-  bool _codeSent = false;
-  bool _codeVerified = false;
   String? _error;
-
-  @override
-  void dispose() {
-    _codeCtrl.dispose();
-    super.dispose();
-  }
 
   Future<void> _tomarFoto(bool esCedula) async {
     final res = await _media.takeFromCamera();
@@ -77,45 +66,12 @@ class _RegisterPhotosScreenState extends State<RegisterPhotosScreen> {
   }
 
   Future<void> _finalizar() async {
-    if (_codeSent &&
-        !_codeVerified &&
-        !RegExp('^[0-9]{${Validators.otpLength}}\$')
-            .hasMatch(_codeCtrl.text.trim())) {
-      setState(
-        () => _error = 'Ingresa el código de ${Validators.otpLength} dígitos',
-      );
-      return;
-    }
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
       final authState = context.read<app_state.AuthState>();
-      if (authState.isBackendEnabled && !_codeSent && !_codeVerified) {
-        final requiresVerification = await authState.sendRegistrationCode(
-          email: widget.correo,
-          password: widget.password,
-        );
-        if (!mounted) return;
-        if (requiresVerification) {
-          setState(() {
-            _codeSent = true;
-            _loading = false;
-          });
-          return;
-        }
-      }
-
-      if (_codeSent && !_codeVerified) {
-        await authState.verifyRegistrationCode(
-          email: widget.correo,
-          code: _codeCtrl.text,
-        );
-        if (!mounted) return;
-        setState(() => _codeVerified = true);
-      }
-
       final fotoBytes = _foto == null
           ? null
           : await _media.compressPhoto(_foto!);
@@ -158,49 +114,25 @@ class _RegisterPhotosScreenState extends State<RegisterPhotosScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_codeSent ? 'Verificar correo' : 'Verificación documental'),
-      ),
+      appBar: AppBar(title: const Text('Verificación documental')),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
             Text(
-              _codeSent
-                  ? 'Confirma tu correo para crear la cuenta'
-                  : 'Sube una foto de tu cara de frente y tu cédula',
+              'Sube una foto de tu cara de frente y tu cédula',
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              _codeSent && !_codeVerified
-                  ? 'Ingresa el código de ${Validators.otpLength} dígitos que enviamos a ${widget.correo}.'
-                  : _codeSent
-                  ? 'Código confirmado. Terminando el registro de tu cuenta.'
-                  : 'Este paso ayuda a verificar tu identidad.',
+              'Este paso ayuda a verificar tu identidad.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.68),
               ),
             ),
             const SizedBox(height: 24),
-            if (_codeSent && !_codeVerified) ...[
-              TextField(
-                controller: _codeCtrl,
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(Validators.otpLength),
-                ],
-                decoration: const InputDecoration(
-                  labelText: 'Código de verificación',
-                  hintText: '12345678',
-                  prefixIcon: Icon(Icons.pin_outlined),
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
             SectionCard(
               title: 'Foto de rostro (frente)',
               subtitle: 'Toma una foto nítida, con buena iluminación.',
@@ -263,13 +195,7 @@ class _RegisterPhotosScreenState extends State<RegisterPhotosScreen> {
             ],
             PrimaryButton(
               onPressed: _loading ? null : _finalizar,
-              label: _loading
-                  ? (_codeSent && !_codeVerified
-                        ? 'Verificando...'
-                        : 'Registrando...')
-                  : _codeSent && !_codeVerified
-                  ? 'Verificar y crear cuenta'
-                  : 'Finalizar registro',
+              label: _loading ? 'Registrando...' : 'Finalizar registro',
             ),
           ],
         ),

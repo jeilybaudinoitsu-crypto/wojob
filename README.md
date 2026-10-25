@@ -91,16 +91,27 @@ RLS.
 La ubicación que captura la app es GPS (`latitud`/`longitud`), no la dirección
 IP del dispositivo.
 
-La contraseña de la cuenta **no** se guarda en `perfiles`: la gestiona
-**Supabase Auth** (`auth.users`). Para exigir la verificación por código durante
-el registro, activa **Authentication → Sign In / Providers → Email → Confirm
-email**. Después de validar el código en la app, se crea el perfil y se suben
-las fotos. Si desactivas esa opción, Supabase no enviará el código de registro
-y la app completará el registro sin ese paso.
+Después de crear las tablas, ejecuta una vez
+[`supabase/auth_registration.sql`](./supabase/auth_registration.sql) y
+[`supabase/room_access_policies.sql`](./supabase/room_access_policies.sql) desde
+el **SQL Editor**, en ese orden. El primero crea el perfil al registrar una
+cuenta mediante un trigger `SECURITY DEFINER` en un esquema privado y convierte
+las contraseñas de sala existentes y futuras a hash bcrypt. El segundo instala
+las políticas protegidas que enlazan la sala recién creada con su administrador,
+permiten restaurar salas y autorizan enviar, ver y aprobar solicitudes. No
+ejecutes estos scripts antes de crear `empresas`, `perfiles` y
+`solicitudes_sala`.
 
-Configura la longitud del OTP de Supabase en **8** (`mailer_otp_length`) para
-que coincida con los campos de la app. Si tu panel no muestra esta opción,
-actualiza la configuración de Auth mediante la Management API:
+La contraseña de la cuenta **no** se guarda en `perfiles`: la gestiona
+**Supabase Auth** (`auth.users`) mediante almacenamiento seguro de contraseñas.
+En **Authentication → Sign In / Providers → Email**, desactiva **Confirm email**
+para permitir el registro sin confirmación. La app conserva únicamente el flujo
+por código para recuperar contraseñas.
+
+La recuperación de contraseña usa un código enviado por correo. En
+**Authentication → Emails → Reset password**, configura `{{ .Token }}` en la
+plantilla para que coincida con el flujo de la app. Configura el OTP en ocho
+dígitos; si el panel no muestra esta opción, utiliza la Management API:
 
 ```bash
 curl -X PATCH "https://api.supabase.com/v1/projects/<PROJECT_REF>/config/auth" \
@@ -108,23 +119,6 @@ curl -X PATCH "https://api.supabase.com/v1/projects/<PROJECT_REF>/config/auth" \
   -H "Content-Type: application/json" \
   -d '{"mailer_otp_length": 8}'
 ```
-
-Usa un token de acceso con permisos de configuración del proyecto; no lo
-incluyas en la app ni en el repositorio. Después, para que el correo de
-registro incluya el código en vez del enlace, abre **Authentication → Emails →
-Confirm signup** y usa `{{ .Token }}` en el cuerpo, por ejemplo:
-
-```html
-<h2>Confirma tu correo</h2>
-<p>Ingresa este código de ocho dígitos en la aplicación:</p>
-<p><strong>{{ .Token }}</strong></p>
-```
-
-La app verifica el código como OTP de registro antes de crear el perfil. Si el
-cuerpo de la plantilla está bloqueado, configura primero un SMTP personalizado
-desde esa misma sección de Emails. La plantilla **Reset password** es
-independiente; también debe usar `{{ .Token }}` para la recuperación de
-contraseña descrita a continuación.
 
 Para que la recuperación envíe un código de ocho dígitos en vez de un enlace,
 abre **Authentication → Emails → Reset password** en Supabase y

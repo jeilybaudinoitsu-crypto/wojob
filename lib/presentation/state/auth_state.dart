@@ -145,28 +145,6 @@ class AuthState extends ChangeNotifier {
     return profile.copyWith(fotoUrl: photoUrl, cedulaUrl: identityUrl);
   }
 
-  /// Inicia el registro y devuelve si Supabase requiere confirmar el correo.
-  Future<bool> sendRegistrationCode({
-    required String email,
-    required String password,
-  }) async {
-    if (!isBackendEnabled) return false;
-    return _authRepository!.sendSignUpCode(email: email, password: password);
-  }
-
-  /// Verifica el código de confirmación del registro.
-  Future<void> verifyRegistrationCode({
-    required String email,
-    required String code,
-  }) async {
-    if (!isBackendEnabled) {
-      throw const AuthException(
-        'La verificación por correo solo está disponible con Supabase.',
-      );
-    }
-    await _authRepository!.verifySignUpCode(email: email, code: code);
-  }
-
   /// Registra un usuario nuevo.
   Future<Perfil> register({
     required TipoUsuario tipoUsuario,
@@ -202,7 +180,10 @@ class AuthState extends ChangeNotifier {
 
       Perfil profile;
       if (isBackendEnabled) {
-        profile = await _authRepository!.createProfile(nuevo);
+        profile = await _authRepository!.registerAccount(
+          perfil: nuevo,
+          password: password,
+        );
         final photoPath = fotoBytes == null
             ? null
             : await _storageRepository!.upload(
@@ -218,7 +199,7 @@ class AuthState extends ChangeNotifier {
                 bytes: cedulaBytes,
               );
         if (photoPath != null || identityPath != null) {
-          profile = await _authRepository!.updatePhotos(
+          profile = await _authRepository.updatePhotos(
             profile.copyWith(fotoUrl: photoPath, cedulaUrl: identityPath),
           );
         }

@@ -16,6 +16,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('es');
   await setupDependencies();
+  await sl<app_state.AuthState>().initialize();
   runApp(const WoJobApp());
 }
 
@@ -26,9 +27,13 @@ class WoJobApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<app_state.AuthState>.value(value: sl<app_state.AuthState>()),
+        ChangeNotifierProvider<app_state.AuthState>.value(
+          value: sl<app_state.AuthState>(),
+        ),
         ChangeNotifierProvider<EmpresaState>.value(value: sl<EmpresaState>()),
-        ChangeNotifierProvider<AsistenciaState>.value(value: sl<AsistenciaState>()),
+        ChangeNotifierProvider<AsistenciaState>.value(
+          value: sl<AsistenciaState>(),
+        ),
         ChangeNotifierProvider<SettingsState>.value(value: sl<SettingsState>()),
       ],
       child: Consumer<SettingsState>(
