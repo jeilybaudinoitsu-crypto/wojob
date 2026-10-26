@@ -17,20 +17,19 @@ class PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final enabled = onPressed != null;
+    final borderRadius = BorderRadius.circular(18);
     final child = Row(
       mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
       children: [
-        if (icon != null) ...[
-          Icon(icon, size: 20),
-          const SizedBox(width: 8),
-        ],
+        if (icon != null) ...[Icon(icon, size: 20), const SizedBox(width: 8)],
         Text(label),
       ],
     );
 
     final style = ElevatedButton.styleFrom(
-      minimumSize: expand ? const Size.fromHeight(56) : null,
+      minimumSize: expand ? const Size.fromHeight(54) : null,
       padding: expand
           ? const EdgeInsets.symmetric(horizontal: 24, vertical: 16)
           : const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -38,19 +37,31 @@ class PrimaryButton extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        gradient: AppColors.brandGradient,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.25),
-            blurRadius: 20,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        gradient: enabled
+            ? AppColors.brandGradient
+            : LinearGradient(
+                colors: [
+                  Theme.of(context).disabledColor,
+                  Theme.of(context).disabledColor,
+                ],
+              ),
+        borderRadius: borderRadius,
+        boxShadow: enabled
+            ? [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.18),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
+                ),
+              ]
+            : const [],
       ),
       child: ElevatedButton(
         onPressed: onPressed,
         style: style.copyWith(
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: borderRadius),
+          ),
           backgroundColor: WidgetStateProperty.all(Colors.transparent),
           shadowColor: WidgetStateProperty.all(Colors.transparent),
           overlayColor: WidgetStateProperty.resolveWith(

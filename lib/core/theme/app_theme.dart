@@ -10,22 +10,22 @@ class AppTheme {
   static const String _fontFamily = 'Roboto';
 
   static ThemeData get light => _base(
-        brightness: Brightness.light,
-        scaffold: AppColors.surfaceLight,
-        surface: Colors.white,
-        onSurface: AppColors.ink,
-        muted: AppColors.gray,
-        border: AppColors.lightGray,
-      );
+    brightness: Brightness.light,
+    scaffold: AppColors.surfaceLight,
+    surface: Colors.white,
+    onSurface: AppColors.ink,
+    muted: AppColors.gray,
+    border: AppColors.lightGray,
+  );
 
   static ThemeData get dark => _base(
-        brightness: Brightness.dark,
-        scaffold: AppColors.surfaceDark,
-        surface: AppColors.cardDark,
-        onSurface: Colors.white,
-        muted: AppColors.lightGray,
-        border: const Color(0xFF3A1E27),
-      );
+    brightness: Brightness.dark,
+    scaffold: AppColors.surfaceDark,
+    surface: AppColors.cardDark,
+    onSurface: Colors.white,
+    muted: AppColors.lightGray,
+    border: const Color(0xFF3A1E27),
+  );
 
   static ThemeData _base({
     required Brightness brightness,
@@ -73,36 +73,62 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         color: surface,
-        elevation: 0,
+        elevation: 1,
         margin: EdgeInsets.zero,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: AppColors.ink.withValues(alpha: isDark ? 0.24 : 0.06),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: border.withValues(alpha: isDark ? 0.6 : 0.5)),
+          borderRadius: BorderRadius.circular(22),
+          side: BorderSide(
+            color: border.withValues(alpha: isDark ? 0.52 : 0.65),
+          ),
         ),
+      ),
+      textTheme: base.textTheme.copyWith(
+        headlineSmall: base.textTheme.headlineSmall?.copyWith(
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.45,
+          height: 1.2,
+        ),
+        titleLarge: base.textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.25,
+          height: 1.25,
+        ),
+        titleMedium: base.textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.1,
+          height: 1.3,
+        ),
+        bodyLarge: base.textTheme.bodyLarge?.copyWith(height: 1.4),
+        bodyMedium: base.textTheme.bodyMedium?.copyWith(height: 1.4),
+        bodySmall: base.textTheme.bodySmall?.copyWith(height: 1.35),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: isDark ? const Color(0xFF2A121A) : Colors.white,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         hintStyle: TextStyle(color: muted, fontSize: 15),
         labelStyle: TextStyle(color: muted),
         prefixIconColor: muted,
         suffixIconColor: muted,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.primary, width: 1.6),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.danger),
         ),
       ),
@@ -113,9 +139,9 @@ class AppTheme {
           disabledBackgroundColor: AppColors.lightGray,
           disabledForegroundColor: Colors.white,
           elevation: 0,
-          minimumSize: const Size.fromHeight(56),
+          minimumSize: const Size.fromHeight(54),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(18),
           ),
           textStyle: const TextStyle(
             fontSize: 16,
@@ -128,9 +154,9 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.primary,
           side: const BorderSide(color: AppColors.primary, width: 1.4),
-          minimumSize: const Size.fromHeight(56),
+          minimumSize: const Size.fromHeight(54),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(18),
           ),
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
@@ -143,37 +169,29 @@ class AppTheme {
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.ink,
         contentTextStyle: const TextStyle(color: Colors.white),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       chipTheme: base.chipTheme.copyWith(
         backgroundColor: isDark ? const Color(0xFF2A121A) : Colors.white,
         side: BorderSide(color: border),
         labelStyle: TextStyle(color: onSurface, fontWeight: FontWeight.w600),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: surface,
         surfaceTintColor: Colors.transparent,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
       ),
       listTileTheme: ListTileThemeData(
         iconColor: muted,
         textColor: onSurface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
   }

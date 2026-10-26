@@ -42,7 +42,10 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
       _msg = null;
     });
     try {
-      final ok = await empresaState.joinSala(_salaIdCtrl.text, usuarioId: user.id);
+      final ok = await empresaState.joinSala(
+        _salaIdCtrl.text,
+        usuarioId: user.id,
+      );
       if (mounted) {
         setState(() {
           _msg = ok
@@ -79,9 +82,9 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
           IconButton(
             icon: const Icon(Icons.person_outline),
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ProfileScreen()),
-              );
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
             },
           ),
         ],
@@ -91,7 +94,9 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
         children: [
           SectionCard(
             title: 'Bienvenido, ${user.nombreCompleto}',
-            subtitle: 'ID personal: ${user.idPersonal} · Cargo: ${user.cargo ?? 'Empleado'}',
+            subtitle:
+                'ID personal: ${user.idPersonal} · Cargo: ${user.cargo ?? 'Empleado'}',
+            leadingIcon: Icons.waving_hand_outlined,
             children: [
               Row(
                 children: [
@@ -124,7 +129,9 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
             const SizedBox(height: 20),
             SectionCard(
               title: '¿Unirte a otra sala?',
-              subtitle: 'Puedes enviar una nueva solicitud con otro ID de sala.',
+              subtitle:
+                  'Puedes enviar una nueva solicitud con otro ID de sala.',
+              leadingIcon: Icons.meeting_room_outlined,
               children: [
                 Form(
                   key: _formKey,
@@ -174,7 +181,9 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
                 const SizedBox(height: 16),
                 PrimaryButton(
                   onPressed: _loading ? null : _unirse,
-                  label: _loading ? 'Enviando...' : 'Enviar solicitud para unirme',
+                  label: _loading
+                      ? 'Enviando...'
+                      : 'Enviar solicitud para unirme',
                 ),
                 if (_msg != null) ...[
                   const SizedBox(height: 12),

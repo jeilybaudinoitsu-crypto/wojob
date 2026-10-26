@@ -31,9 +31,8 @@ class AdminHomeScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.person_outline),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ProfileScreen()),
-            ),
+            onPressed: () => Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const ProfileScreen())),
           ),
         ],
       ),
@@ -43,6 +42,7 @@ class AdminHomeScreen extends StatelessWidget {
           SectionCard(
             title: 'Bienvenido, ${user.nombreCompleto}',
             subtitle: 'Rol: ${user.tipoUsuario.label} · ID: ${user.idPersonal}',
+            leadingIcon: Icons.waving_hand_outlined,
             children: [
               Row(
                 children: [
@@ -74,13 +74,16 @@ class AdminHomeScreen extends StatelessWidget {
             SectionCard(
               title: 'Acciones rápidas',
               subtitle: 'Crear o unirte a otra sala.',
+              leadingIcon: Icons.bolt_outlined,
               children: [
                 Row(
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const CreateSalaScreen()),
+                          MaterialPageRoute(
+                            builder: (_) => const CreateSalaScreen(),
+                          ),
                         ),
                         icon: const Icon(Icons.add_business_outlined),
                         label: const Text('Crear sala'),
@@ -90,7 +93,9 @@ class AdminHomeScreen extends StatelessWidget {
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const JoinSalaScreen()),
+                          MaterialPageRoute(
+                            builder: (_) => const JoinSalaScreen(),
+                          ),
                         ),
                         icon: const Icon(Icons.login_outlined),
                         label: const Text('Unirse a sala'),
@@ -111,9 +116,9 @@ class AdminHomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             OutlinedButton.icon(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const JoinSalaScreen()),
-              ),
+              onPressed: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const JoinSalaScreen())),
               icon: const Icon(Icons.login_outlined),
               label: const Text('Unirse a una sala'),
             ),

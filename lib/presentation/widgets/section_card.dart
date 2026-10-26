@@ -5,13 +5,15 @@ class SectionCard extends StatelessWidget {
     super.key,
     required this.title,
     this.subtitle,
+    this.leadingIcon,
     required this.children,
     this.trailing,
-    this.padding = const EdgeInsets.all(22),
+    this.padding = const EdgeInsets.all(24),
   });
 
   final String title;
   final String? subtitle;
+  final IconData? leadingIcon;
   final List<Widget> children;
   final Widget? trailing;
   final EdgeInsets padding;
@@ -28,31 +30,57 @@ class SectionCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      Text(
-                        title,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      if (subtitle != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          subtitle!,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.68),
+                      if (leadingIcon != null) ...[
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.08,
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Icon(
+                            leadingIcon,
+                            size: 21,
+                            color: theme.colorScheme.primary,
                           ),
                         ),
+                        const SizedBox(width: 12),
                       ],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            if (subtitle != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                subtitle!,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurface.withValues(
+                                    alpha: 0.68,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
                 ?trailing,
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             ...children,
           ],
         ),
