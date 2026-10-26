@@ -15,12 +15,10 @@ const _uuid = Uuid();
 /// Estado de asistencias y marcaciones.
 class AsistenciaState extends ChangeNotifier {
   AsistenciaState({
-    AsistenciaRepository? asistenciaRepository,
-    StorageRepository? storageRepository,
-    AuthRepository? authRepository,
-  })  : _asistenciaRepository = asistenciaRepository,
-        _storageRepository = storageRepository,
-        _authRepository = authRepository {
+    this._asistenciaRepository,
+    this._storageRepository,
+    this._authRepository,
+  }) {
     if (!isBackendEnabled) _seed();
   }
 

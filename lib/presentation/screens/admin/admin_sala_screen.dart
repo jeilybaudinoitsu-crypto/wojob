@@ -23,7 +23,6 @@ class AdminSalaScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final authState = context.watch<app_state.AuthState>();
     final empresaState = context.watch<EmpresaState>();
     final asistenciaState = context.watch<AsistenciaState>();
 
@@ -52,23 +51,53 @@ class AdminSalaScreen extends StatelessWidget {
           const SizedBox(height: 20),
           Row(
             children: [
-              Expanded(child: _stat(theme, 'Empleados', '${empleados.length}', Icons.groups_outlined)),
+              Expanded(
+                child: _stat(
+                  theme,
+                  'Empleados',
+                  '${empleados.length}',
+                  Icons.groups_outlined,
+                ),
+              ),
               const SizedBox(width: 12),
-              Expanded(child: _stat(theme, 'Administradores', '${admins.length}', Icons.admin_panel_settings_outlined)),
+              Expanded(
+                child: _stat(
+                  theme,
+                  'Administradores',
+                  '${admins.length}',
+                  Icons.admin_panel_settings_outlined,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: _stat(theme, 'Asistencias', '${asistencias.length}', Icons.fact_check_outlined)),
+              Expanded(
+                child: _stat(
+                  theme,
+                  'Asistencias',
+                  '${asistencias.length}',
+                  Icons.fact_check_outlined,
+                ),
+              ),
               const SizedBox(width: 12),
-              Expanded(child: _stat(theme, 'Solicitudes', '${solicitudesPend.length}', Icons.mark_email_unread_outlined)),
+              Expanded(
+                child: _stat(
+                  theme,
+                  'Solicitudes',
+                  '${solicitudesPend.length}',
+                  Icons.mark_email_unread_outlined,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 24),
           Text(
             'Acciones principales',
-            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 14),
           _menuTile(
@@ -130,15 +159,19 @@ class AdminSalaScreen extends StatelessWidget {
           children: [
             Icon(icon, color: theme.colorScheme.primary),
             const SizedBox(height: 12),
-            Text(value,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                )),
+            Text(
+              value,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
             const SizedBox(height: 2),
-            Text(label,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.68),
-                )),
+            Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.68),
+              ),
+            ),
           ],
         ),
       ),
@@ -158,7 +191,10 @@ class AdminSalaScreen extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12),
       child: Card(
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 18,
+            vertical: 10,
+          ),
           leading: Container(
             width: 46,
             height: 46,
@@ -168,24 +204,34 @@ class AdminSalaScreen extends StatelessWidget {
             ),
             child: Icon(icon, color: theme.colorScheme.primary),
           ),
-          title: Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+          title: Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           subtitle: Text(subtitle),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (badge > 0)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primary,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Text('$badge',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      )),
+                  child: Text(
+                    '$badge',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
                 ),
               const SizedBox(width: 8),
               const Icon(Icons.chevron_right),
@@ -225,12 +271,16 @@ class AdminSalaScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text(
                     empresa.nombreEmpresa,
-                    style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   Text(
                     'Sala ${empresa.idSala}',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.68),
+                      color: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.68,
+                      ),
                     ),
                   ),
                 ],
@@ -243,7 +293,9 @@ class AdminSalaScreen extends StatelessWidget {
               onTap: () {
                 Navigator.of(context).pop();
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => RequestsScreen(empresa: empresa)),
+                  MaterialPageRoute(
+                    builder: (_) => RequestsScreen(empresa: empresa),
+                  ),
                 );
               },
             ),
@@ -261,8 +313,10 @@ class AdminSalaScreen extends StatelessWidget {
             const Divider(),
             ListTile(
               leading: Icon(Icons.logout, color: theme.colorScheme.error),
-              title: Text('Salir',
-                  style: TextStyle(color: theme.colorScheme.error)),
+              title: Text(
+                'Salir',
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
               onTap: () {
                 Navigator.of(context).pop();
                 authState.logout();

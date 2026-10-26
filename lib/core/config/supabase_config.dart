@@ -17,6 +17,12 @@ class SupabaseConfig {
   final String url;
   final String anonKey;
 
+  String get publishableKey => anonKey;
+
+  static void clearCache() {
+    _instance = null;
+  }
+
   /// `true` cuando hay una URL y una anon key reales (no los placeholders).
   bool get isConfigured {
     final parsedUrl = Uri.tryParse(url);
@@ -24,14 +30,20 @@ class SupabaseConfig {
     final isLocalUrl =
         parsedUrl?.scheme == 'http' &&
         const {'localhost', '127.0.0.1', '::1'}.contains(parsedUrl?.host);
+    final sanitizedKey = anonKey.trim();
+    final hasPlaceholderMarker =
+        sanitizedKey.isEmpty ||
+        sanitizedKey == '******' ||
+        sanitizedKey.replaceAll(RegExp(r'[\s\*]+'), '').isEmpty ||
+        sanitizedKey.contains('TU-PROYECTO') ||
+        sanitizedKey.contains('PEGA_AQUI') ||
+        sanitizedKey.contains('TU_ANON_KEY') ||
+        sanitizedKey.contains('TU_PUBLISHABLE_KEY');
+
     return parsedUrl?.hasAuthority == true &&
         parsedUrl?.host.isNotEmpty == true &&
         (isSecureUrl || isLocalUrl) &&
-        anonKey.isNotEmpty &&
-        !anonKey.contains('TU-PROYECTO') &&
-        !anonKey.contains('PEGA_AQUI') &&
-        !anonKey.contains('TU_ANON_KEY') &&
-        !anonKey.contains('TU_PUBLISHABLE_KEY');
+        !hasPlaceholderMarker;
   }
 
   static const String _defineUrl = String.fromEnvironment('SUPABASE_URL');

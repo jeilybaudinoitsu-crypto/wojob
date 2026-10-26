@@ -53,6 +53,10 @@ abstract class EmpresaRepository {
   Future<Empresa?> findById(String id);
   Future<Empresa?> findBySalaId(String idSala);
   Future<List<Empresa>> all();
+  Future<Empresa> updateSubscriptionPlan({
+    required String empresaId,
+    required PlanSuscripcion plan,
+  });
 }
 
 abstract class SolicitudRepository {
@@ -101,8 +105,5 @@ abstract class StorageRepository {
   });
 
   /// Elimina un archivo.
-  Future<void> delete({
-    required String bucket,
-    required String path,
-  });
+  Future<void> delete({required String bucket, required String path});
 }

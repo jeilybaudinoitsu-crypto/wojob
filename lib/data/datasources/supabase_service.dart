@@ -14,18 +14,30 @@ class SupabaseService {
   /// `true` si Supabase quedó inicializado (hay URL + anon key válidas).
   static bool get isEnabled => _initialized;
 
+  static void reset() {
+    _initialized = false;
+    SupabaseConfig.clearCache();
+  }
+
   /// Inicializa Supabase si hay configuración válida. Si no la hay, la app
   /// continúa en modo local (datos mock) sin lanzar excepciones.
   static Future<bool> initialize() async {
     if (_initialized) return true;
-    final config = await SupabaseConfig.load();
-    if (!config.isConfigured) return false;
-    await Supabase.initialize(
-      url: config.url,
-      anonKey: config.anonKey,
-    );
-    _initialized = true;
-    return true;
+
+    try {
+      final config = await SupabaseConfig.load();
+      if (!config.isConfigured) return false;
+
+      await Supabase.initialize(
+        url: config.url,
+        publishableKey: config.publishableKey,
+      );
+      _initialized = true;
+      return true;
+    } on Exception {
+      _initialized = false;
+      return false;
+    }
   }
 
   /// Cliente de Supabase. Solo debe usarse cuando [isEnabled] es `true`.

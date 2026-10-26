@@ -189,6 +189,17 @@ grant update (empresa_id, foto_url, cedula_url)
 
 revoke update on public.empresas from public, anon, authenticated;
 grant select, insert on public.empresas to authenticated;
+grant update (plan_suscripcion, limite_empleados)
+  on public.empresas to authenticated;
+
+drop policy if exists "WoJob admins update company subscription"
+  on public.empresas;
+create policy "WoJob admins update company subscription"
+on public.empresas
+for update
+to authenticated
+using (private.is_current_user_admin_for_company(id))
+with check (private.is_current_user_admin_for_company(id));
 
 revoke update on public.solicitudes_sala from public, anon, authenticated;
 grant select, insert on public.solicitudes_sala to authenticated;

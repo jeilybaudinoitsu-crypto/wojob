@@ -15,14 +15,11 @@ const _uuid = Uuid();
 /// Estado de empresas/salas y gestión de miembros.
 class EmpresaState extends ChangeNotifier {
   EmpresaState({
-    EmpresaRepository? empresaRepository,
-    AuthRepository? authRepository,
-    SolicitudRepository? solicitudRepository,
-    HorarioRepository? horarioRepository,
-  }) : _empresaRepository = empresaRepository,
-       _authRepository = authRepository,
-       _solicitudRepository = solicitudRepository,
-       _horarioRepository = horarioRepository {
+    this._empresaRepository,
+    this._authRepository,
+    this._solicitudRepository,
+    this._horarioRepository,
+  }) {
     if (!isBackendEnabled) _seed();
   }
 
@@ -82,9 +79,9 @@ class EmpresaState extends ChangeNotifier {
       _perfiles.clear();
 
       final empresa = await _empresaRepository!.findById(empresaId);
+      currentEmpresa = empresa;
       if (empresa != null) {
         _empresas[empresa.id] = empresa;
-        currentEmpresa = empresa;
       }
 
       final members = await _authRepository!.byEmpresa(empresaId);
@@ -228,6 +225,54 @@ class EmpresaState extends ChangeNotifier {
     return _perfiles.values.where((p) => p.empresaId == empresaId).toList();
   }
 
+  int empleadosActivosDeEmpresa(String empresaId) {
+    return miembrosDeEmpresa(empresaId)
+        .where((profile) => !profile.isAdmin && profile.estadoActivo)
+        .length;
+  }
+
+  Future<Empresa> updateSubscriptionPlan({
+    required String empresaId,
+    required PlanSuscripcion plan,
+  }) async {
+    isLoading = true;
+    backendError = null;
+    notifyListeners();
+
+    try {
+      final empresa = _empresas[empresaId];
+      if (empresa == null) {
+        throw const ValidationException('No se encontró la sala.');
+      }
+      final employeeLimit = plan.limiteEmpleados;
+      final activeEmployees = empleadosActivosDeEmpresa(empresaId);
+      if (employeeLimit != null && activeEmployees > employeeLimit) {
+        throw ValidationException(
+          'La sala ya tiene $activeEmployees empleados activos. '
+          'No se puede cambiar a un plan con límite de $employeeLimit.',
+        );
+      }
+      final updated = empresa.copyWith(planSuscripcion: plan);
+      final stored = isBackendEnabled
+          ? await _empresaRepository!.updateSubscriptionPlan(
+              empresaId: empresaId,
+              plan: plan,
+            )
+          : updated;
+      _empresas[empresaId] = stored;
+      if (currentEmpresa?.id == empresaId) currentEmpresa = stored;
+      return stored;
+    } catch (e) {
+      backendError = e is AppException
+          ? e.message
+          : 'No se pudo actualizar el plan de la sala.';
+      throw UnknownException(backendError!, cause: e);
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<bool> acceptSolicitud(String solicitudId) async {
     isLoading = true;
     backendError = null;
@@ -236,6 +281,21 @@ class EmpresaState extends ChangeNotifier {
     try {
       final s = _solicitudes[solicitudId];
       if (s == null) return false;
+
+      final applicant = _perfiles[s.usuarioId];
+      final empresa = _empresas[s.empresaId];
+      final employeeLimit = empresa?.limiteEmpleados;
+      if (applicant != null &&
+          !applicant.isAdmin &&
+          applicant.estadoActivo &&
+          applicant.empresaId != s.empresaId &&
+          employeeLimit != null &&
+          empleadosActivosDeEmpresa(s.empresaId) >= employeeLimit) {
+        throw ValidationException(
+          'La sala alcanzó el límite de $employeeLimit empleados de su plan '
+          '${empresa!.planSuscripcion.label}.',
+        );
+      }
 
       if (isBackendEnabled) {
         await _authRepository!.updateEmpresa(s.usuarioId, s.empresaId);

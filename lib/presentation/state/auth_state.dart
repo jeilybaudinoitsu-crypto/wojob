@@ -17,10 +17,9 @@ const _seedPassword = 'WoJob1234';
 /// Estado de autenticación y perfil de usuario.
 class AuthState extends ChangeNotifier {
   AuthState({
-    AuthRepository? authRepository,
-    StorageRepository? storageRepository,
-  }) : _authRepository = authRepository,
-       _storageRepository = storageRepository {
+    this._authRepository,
+    this._storageRepository,
+  }) {
     if (!isBackendEnabled) _seed();
   }
 

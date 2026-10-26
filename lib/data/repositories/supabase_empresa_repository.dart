@@ -11,7 +11,8 @@ class SupabaseEmpresaRepository implements EmpresaRepository {
   final sb.SupabaseClient _client;
   static const String _table = 'empresas';
   static const String _columns =
-      'id,id_sala,nombre_empresa,direccion_empresa,created_at';
+      'id,id_sala,nombre_empresa,direccion_empresa,plan_suscripcion,'
+      'limite_empleados,created_at';
 
   @override
   Future<Empresa> create(Empresa empresa) async {
@@ -29,12 +30,11 @@ class SupabaseEmpresaRepository implements EmpresaRepository {
 
   @override
   Future<Empresa?> findById(String id) async {
-    final data =
-        await _client
-            .from(_table)
-            .select(_columns)
-            .eq('id', id)
-            .maybeSingle();
+    final data = await _client
+        .from(_table)
+        .select(_columns)
+        .eq('id', id)
+        .maybeSingle();
     return data == null ? null : Empresa.fromMap(data);
   }
 
@@ -54,5 +54,29 @@ class SupabaseEmpresaRepository implements EmpresaRepository {
     return (rows as List)
         .map((e) => Empresa.fromMap(e as Map<String, dynamic>))
         .toList();
+  }
+
+  @override
+  Future<Empresa> updateSubscriptionPlan({
+    required String empresaId,
+    required PlanSuscripcion plan,
+  }) async {
+    try {
+      final data = await _client
+          .from(_table)
+          .update({
+            'plan_suscripcion': plan.dbValue,
+            'limite_empleados': plan.limiteEmpleados,
+          })
+          .eq('id', empresaId)
+          .select(_columns)
+          .single();
+      return Empresa.fromMap(data);
+    } catch (e) {
+      throw UnknownException(
+        'No se pudo actualizar el plan de la sala.',
+        cause: e,
+      );
+    }
   }
 }

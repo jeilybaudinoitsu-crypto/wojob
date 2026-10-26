@@ -74,27 +74,32 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
     if (_geo == null || !_geo!.isValid) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Activa los permisos de ubicación y vuelve a intentarlo.'),
+          content: Text(
+            'Activa los permisos de ubicación y vuelve a intentarlo.',
+          ),
         ),
       );
       return;
     }
     final user = context.read<app_state.AuthState>().currentUser;
     if (user == null) return;
+    final asistenciaState = context.read<AsistenciaState>();
     setState(() => _loading = true);
     try {
       final photoBytes = await _media.compressPhoto(_foto!);
       if (photoBytes == null) {
-        throw const ValidationException('No se pudo leer la foto seleccionada.');
+        throw const ValidationException(
+          'No se pudo leer la foto seleccionada.',
+        );
       }
-      await context.read<AsistenciaState>().markAttendance(
-            empleadoId: user.id,
-            empresaId: widget.empresa.id,
-            tipo: widget.tipo,
-            latitud: _geo!.latitude,
-            longitud: _geo!.longitude,
-            fotoBytes: photoBytes,
-          );
+      await asistenciaState.markAttendance(
+        empleadoId: user.id,
+        empresaId: widget.empresa.id,
+        tipo: widget.tipo,
+        latitud: _geo!.latitude,
+        longitud: _geo!.longitude,
+        fotoBytes: photoBytes,
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
@@ -118,9 +123,7 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
   Widget build(BuildContext context) {
     final hora = DateTime.now();
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Marcar ${widget.tipo.label.toLowerCase()}'),
-      ),
+      appBar: AppBar(title: Text('Marcar ${widget.tipo.label.toLowerCase()}')),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
@@ -143,9 +146,9 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
                   _gettingLoc
                       ? 'Obteniendo ubicación...'
                       : _geo == null || !_geo!.isValid
-                          ? 'No se pudo obtener ubicación'
-                          : '${formatCoordinates(_geo!.latitude, _geo!.longitude)}'
-                              '${_geo!.accuracy != null ? ' · ±${_geo!.accuracy!.toStringAsFixed(0)} m' : ''}',
+                      ? 'No se pudo obtener ubicación'
+                      : '${formatCoordinates(_geo!.latitude, _geo!.longitude)}'
+                            '${_geo!.accuracy != null ? ' · ±${_geo!.accuracy!.toStringAsFixed(0)} m' : ''}',
                 ),
                 contentPadding: EdgeInsets.zero,
                 trailing: IconButton(
@@ -217,13 +220,18 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add_a_photo_outlined,
-                size: 42, color: theme.colorScheme.onSurface.withValues(alpha: 0.48)),
+            Icon(
+              Icons.add_a_photo_outlined,
+              size: 42,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.48),
+            ),
             const SizedBox(height: 8),
-            Text('Sin foto',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.68),
-                )),
+            Text(
+              'Sin foto',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.68),
+              ),
+            ),
           ],
         ),
       );

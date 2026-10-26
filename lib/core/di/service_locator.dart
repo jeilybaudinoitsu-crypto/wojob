@@ -64,5 +64,6 @@ Future<void> setupDependencies({bool isTest = false}) async {
 }
 
 void resetDependencies() {
+  SupabaseService.reset();
   sl.reset();
 }

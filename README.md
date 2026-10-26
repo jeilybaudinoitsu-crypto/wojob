@@ -18,6 +18,8 @@ datos de ejemplo, de modo que se puede desarrollar y probar sin backend.
 - Registro de empleados (2 pasos): datos personales + contraseña y luego
   cédula/foto de rostro.
 - Solicitudes de acceso a una sala (pendiente / aceptada / rechazada).
+- Planes de sala: FREE (10 empleados), BUSINESS GOLD ($25/mes, 250 empleados)
+  y CEO DIAMOND ($60/mes, empleados ilimitados).
 - Asignación de turnos y horarios por día de la semana.
 - Marcación de asistencia con foto comprimida (< 300 KB) y geolocalización.
 - Mapa de solo lectura (OpenStreetMap) con la ubicación capturada.
@@ -75,10 +77,11 @@ o Storage se muestran en pantalla.
 
 Si el proyecto aún no tiene las tablas, ejecuta una sola vez los archivos de
 [`supabase/migrations/`](./supabase/migrations/) en el **SQL Editor** de
-Supabase, en orden numérico del 1 al 5. Si ya existen, no vuelvas a ejecutar los
+Supabase, en orden numérico del 1 al 6. Si ya existen, no vuelvas a ejecutar los
 `CREATE TABLE`; comprueba los nombres de tablas, columnas y tipos en **Table
-Editor**. Esas migraciones crean las tablas, pero no crean buckets ni políticas
-RLS.
+Editor**. La migración 6 añade el plan y el límite de empleados de cada sala,
+además de la validación del cupo en la base de datos. Esas migraciones crean las
+tablas, pero no crean buckets ni políticas RLS.
 
 | Tabla | Propósito |
 | --- | --- |
@@ -87,6 +90,10 @@ RLS.
 | `solicitudes_sala` | Solicitudes de acceso de empleados a una sala. |
 | `horarios` | Turnos por empleado y día de la semana. |
 | `asistencias` | Marcaciones (tipo, `latitud`, `longitud`, `foto_url`). |
+
+Los planes pagados se muestran en el perfil del administrador, pero su
+activación queda pendiente hasta integrar el procesamiento de pagos. Elegirlos
+en la interfaz no cambia la suscripción ni genera un cobro.
 
 La ubicación que captura la app es GPS (`latitud`/`longitud`), no la dirección
 IP del dispositivo.
