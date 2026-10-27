@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:wojob/data/models/empresa.dart';
+import 'package:wojob/data/datasources/supabase_service.dart';
+import 'package:wojob/data/repositories/stripe_checkout_repository.dart';
 import 'package:wojob/presentation/state/auth_state.dart' as app_state;
 import 'package:wojob/presentation/state/empresa_state.dart';
 import 'package:wojob/presentation/state/settings_state.dart';
@@ -127,15 +130,63 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
-class _SubscriptionSection extends StatelessWidget {
+class _SubscriptionSection extends StatefulWidget {
   const _SubscriptionSection({required this.empresa});
 
   final Empresa empresa;
 
   @override
+  State<_SubscriptionSection> createState() => _SubscriptionSectionState();
+}
+
+class _SubscriptionSectionState extends State<_SubscriptionSection> {
+  PlanSuscripcion? _startingPlan;
+
+  Future<void> _startCheckout(PlanSuscripcion plan) async {
+    if (_startingPlan != null) return;
+    if (!SupabaseService.isEnabled) {
+      _showMessage('Conecta Supabase para iniciar un pago.');
+      return;
+    }
+
+    setState(() => _startingPlan = plan);
+    try {
+      final checkoutUrl = await StripeCheckoutRepository(SupabaseService.client)
+          .createCheckoutSession(plan);
+      final launched = await launchUrl(
+        checkoutUrl,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched) {
+        _showMessage('No se pudo abrir Stripe Checkout.');
+      } else {
+        _showMessage(
+          'Completa el pago en Stripe. El plan se activará cuando Stripe '
+          'confirme la suscripción.',
+        );
+      }
+    } on Exception catch (error, stackTrace) {
+      debugPrint('No se pudo iniciar Stripe Checkout: $error\n$stackTrace');
+      _showMessage(
+        'No se pudo iniciar el pago. Verifica tu conexión e inténtalo de nuevo.',
+      );
+    } finally {
+      if (mounted) setState(() => _startingPlan = null);
+    }
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final empresaState = context.watch<EmpresaState>();
+    final empresa = widget.empresa;
     final planActual = empresa.planSuscripcion;
     final empleadosActivos = empresaState.empleadosActivosDeEmpresa(empresa.id);
     final limite = empresa.limiteEmpleados;
@@ -203,41 +254,29 @@ class _SubscriptionSection extends StatelessWidget {
           _PlanOption(
             plan: plan,
             isCurrent: plan == planActual,
-            onSelect: plan == planActual
+            isLoading: _startingPlan == plan,
+            canSelect: planActual == PlanSuscripcion.free,
+            onSelect:
+                plan == planActual ||
+                    planActual != PlanSuscripcion.free ||
+                    _startingPlan != null
                 ? null
-                : () => _showPaymentNotice(context, plan),
+                : () => _startCheckout(plan),
           ),
           if (plan != PlanSuscripcion.values.last) const SizedBox(height: 12),
         ],
         const SizedBox(height: 8),
         Text(
-          'La activación de planes de pago estará disponible cuando se integre '
-          'el procesamiento de pagos. Elegir un plan aquí no genera un cobro '
-          'ni modifica la suscripción actual.',
+          planActual == PlanSuscripcion.free
+              ? 'El plan solo cambia después de que Stripe confirme el pago. '
+                    'El precio y la moneda se configuran en Stripe.'
+              : 'La gestión de cambios o cancelación de un plan de pago '
+                    'aún no está disponible en la app.',
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurface.withValues(alpha: 0.68),
           ),
         ),
       ],
-    );
-  }
-
-  Future<void> _showPaymentNotice(BuildContext context, PlanSuscripcion plan) {
-    return showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Pagos próximamente'),
-        content: Text(
-          'La activación de ${plan.label} requiere completar el pago. '
-          'No se ha cambiado el plan actual.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Entendido'),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -247,11 +286,15 @@ class _PlanOption extends StatelessWidget {
     required this.plan,
     required this.isCurrent,
     required this.onSelect,
+    required this.isLoading,
+    required this.canSelect,
   });
 
   final PlanSuscripcion plan;
   final bool isCurrent;
   final VoidCallback? onSelect;
+  final bool isLoading;
+  final bool canSelect;
 
   @override
   Widget build(BuildContext context) {
@@ -294,7 +337,19 @@ class _PlanOption extends StatelessWidget {
           const SizedBox(height: 12),
           OutlinedButton(
             onPressed: onSelect,
-            child: Text(isCurrent ? 'Plan actual' : 'Elegir ${plan.label}'),
+            child: isLoading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(
+                    isCurrent
+                        ? 'Plan actual'
+                        : canSelect
+                        ? 'Elegir ${plan.label}'
+                        : 'Cambios no disponibles',
+                  ),
           ),
         ],
       ),

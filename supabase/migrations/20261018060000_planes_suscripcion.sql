@@ -38,17 +38,8 @@ revoke all on function private.is_current_user_admin_for_company(uuid)
 grant execute on function private.is_current_user_admin_for_company(uuid)
   to authenticated;
 
-grant update (plan_suscripcion, limite_empleados)
-  on public.empresas to authenticated;
-
 drop policy if exists "WoJob admins update company subscription"
   on public.empresas;
-create policy "WoJob admins update company subscription"
-on public.empresas
-for update
-to authenticated
-using (private.is_current_user_admin_for_company(id))
-with check (private.is_current_user_admin_for_company(id));
 
 create or replace function private.guard_company_subscription_update()
 returns trigger

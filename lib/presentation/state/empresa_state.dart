@@ -231,48 +231,6 @@ class EmpresaState extends ChangeNotifier {
         .length;
   }
 
-  Future<Empresa> updateSubscriptionPlan({
-    required String empresaId,
-    required PlanSuscripcion plan,
-  }) async {
-    isLoading = true;
-    backendError = null;
-    notifyListeners();
-
-    try {
-      final empresa = _empresas[empresaId];
-      if (empresa == null) {
-        throw const ValidationException('No se encontró la sala.');
-      }
-      final employeeLimit = plan.limiteEmpleados;
-      final activeEmployees = empleadosActivosDeEmpresa(empresaId);
-      if (employeeLimit != null && activeEmployees > employeeLimit) {
-        throw ValidationException(
-          'La sala ya tiene $activeEmployees empleados activos. '
-          'No se puede cambiar a un plan con límite de $employeeLimit.',
-        );
-      }
-      final updated = empresa.copyWith(planSuscripcion: plan);
-      final stored = isBackendEnabled
-          ? await _empresaRepository!.updateSubscriptionPlan(
-              empresaId: empresaId,
-              plan: plan,
-            )
-          : updated;
-      _empresas[empresaId] = stored;
-      if (currentEmpresa?.id == empresaId) currentEmpresa = stored;
-      return stored;
-    } catch (e) {
-      backendError = e is AppException
-          ? e.message
-          : 'No se pudo actualizar el plan de la sala.';
-      throw UnknownException(backendError!, cause: e);
-    } finally {
-      isLoading = false;
-      notifyListeners();
-    }
-  }
-
   Future<bool> acceptSolicitud(String solicitudId) async {
     isLoading = true;
     backendError = null;

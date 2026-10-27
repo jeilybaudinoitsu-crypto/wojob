@@ -91,9 +91,65 @@ tablas, pero no crean buckets ni políticas RLS.
 | `horarios` | Turnos por empleado y día de la semana. |
 | `asistencias` | Marcaciones (tipo, `latitud`, `longitud`, `foto_url`). |
 
-Los planes pagados se muestran en el perfil del administrador, pero su
-activación queda pendiente hasta integrar el procesamiento de pagos. Elegirlos
-en la interfaz no cambia la suscripción ni genera un cobro.
+Los planes pagados se cobran mediante Stripe Checkout. La app solicita el
+checkout a una Edge Function autenticada y el plan solo se activa cuando el
+webhook firmado de Stripe confirma una suscripción activa. En esta primera
+versión se pueden contratar planes desde FREE; los cambios y cancelaciones de
+planes de pago aún no se gestionan desde la app.
+
+### Pagos con Stripe (modo de pruebas)
+
+Antes de probar, completa la configuración de base de datos y ejecuta
+`supabase/stripe_payment_security.sql` según los pasos siguientes de esta guía.
+
+1. En Stripe, activa **test mode** y crea los productos BUSINESS GOLD y CEO
+   DIAMOND con precios **recurrentes mensuales**. Usa la moneda que quieres
+   cobrar y precios que coincidan con los importes mostrados en la app; copia
+   los dos identificadores `price_...`.
+2. En Supabase, abre **Edge Functions → Secrets** y añade:
+
+   | Nombre | Valor |
+   | --- | --- |
+   | `STRIPE_SECRET_KEY` | Clave secreta de pruebas `sk_test_...` |
+   | `STRIPE_PRICE_BUSINESS_GOLD` | ID de precio mensual `price_...` |
+   | `STRIPE_PRICE_CEO_DIAMOND` | ID de precio mensual `price_...` |
+   | `STRIPE_SUCCESS_URL` | `wojob://payment-success?session_id={CHECKOUT_SESSION_ID}` |
+   | `STRIPE_CANCEL_URL` | `wojob://payment-cancelled` |
+   | `STRIPE_WEBHOOK_SECRET` | Se añade en el paso 4, cuando Stripe genere el endpoint |
+
+   `SUPABASE_URL` y las claves de API de Supabase ya están disponibles para las
+   Edge Functions. **No** guardes una clave `sk_...` o `whsec_...` en Flutter,
+   en `assets/config/` ni en el `.env` del cliente. El flujo alojado por Stripe
+   no necesita la publishable key `pk_test_...` de Stripe.
+   Android ya está configurado para abrir los enlaces `wojob://` en la app; la
+   aplicación escucha ambos retornos. En el retorno de éxito, la app refresca
+   la sala, pero solo el webhook firmado confirma y activa el plan.
+3. Enlaza el directorio con tu proyecto y despliega las funciones:
+
+   ```bash
+   supabase link --project-ref <PROJECT_REF>
+   supabase functions deploy create-checkout-session
+   supabase functions deploy stripe-webhook
+   ```
+
+4. En Stripe, añade un webhook con esta URL:
+   `https://<PROJECT_REF>.supabase.co/functions/v1/stripe-webhook`. Selecciona
+   `customer.subscription.created`, `customer.subscription.updated` y
+   `customer.subscription.deleted`. Copia el secreto de firma `whsec_...` a
+   `STRIPE_WEBHOOK_SECRET` en Supabase. La función verifica esa firma; el resto
+   de las funciones conserva la validación JWT predeterminada.
+5. Inicia sesión en WoJob como administrador de una sala FREE y elige un plan.
+   Para probar en Stripe test mode, usa una tarjeta de prueba publicada por
+   Stripe (por ejemplo, `4242 4242 4242 4242`) con una fecha futura y cualquier
+   CVC. Revisa **Developers → Webhooks → Events** para confirmar que el webhook
+   llegó; el plan solo cambiará después de recibir esos eventos.
+
+Para producción, crea precios y webhook en **live mode** y reemplaza las claves
+`sk_test_...` / `whsec_...` por sus equivalentes de producción. Configura URLs
+de éxito/cancelación HTTPS válidas. Las instrucciones oficiales de
+[despliegue de Edge Functions](https://supabase.com/docs/guides/functions/deploy)
+y [secretos de Edge Functions](https://supabase.com/docs/guides/functions/secrets)
+incluyen los detalles de la CLI y el Dashboard.
 
 La ubicación que captura la app es GPS (`latitud`/`longitud`), no la dirección
 IP del dispositivo.
@@ -108,6 +164,13 @@ las políticas protegidas que enlazan la sala recién creada con su administrado
 permiten restaurar salas y autorizan enviar, ver y aprobar solicitudes. No
 ejecutes estos scripts antes de crear `empresas`, `perfiles` y
 `solicitudes_sala`.
+
+Después, ejecuta una vez
+[`supabase/stripe_payment_security.sql`](./supabase/stripe_payment_security.sql)
+en el SQL Editor. Este script elimina el permiso previo para cambiar planes
+directamente desde el cliente, de modo que solo el webhook de Stripe puede
+actualizar una suscripción. Es idempotente y también es necesario si ya
+ejecutaste la migración 6 o una versión anterior de las políticas de sala.
 
 La contraseña de la cuenta **no** se guarda en `perfiles`: la gestiona
 **Supabase Auth** (`auth.users`) mediante almacenamiento seguro de contraseñas.

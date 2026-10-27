@@ -56,27 +56,4 @@ class SupabaseEmpresaRepository implements EmpresaRepository {
         .toList();
   }
 
-  @override
-  Future<Empresa> updateSubscriptionPlan({
-    required String empresaId,
-    required PlanSuscripcion plan,
-  }) async {
-    try {
-      final data = await _client
-          .from(_table)
-          .update({
-            'plan_suscripcion': plan.dbValue,
-            'limite_empleados': plan.limiteEmpleados,
-          })
-          .eq('id', empresaId)
-          .select(_columns)
-          .single();
-      return Empresa.fromMap(data);
-    } catch (e) {
-      throw UnknownException(
-        'No se pudo actualizar el plan de la sala.',
-        cause: e,
-      );
-    }
-  }
 }

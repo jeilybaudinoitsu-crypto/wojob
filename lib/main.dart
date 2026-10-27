@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
@@ -20,8 +21,75 @@ Future<void> main() async {
   runApp(const WoJobApp());
 }
 
-class WoJobApp extends StatelessWidget {
+final _navigatorKey = GlobalKey<NavigatorState>();
+final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
+class WoJobApp extends StatefulWidget {
   const WoJobApp({super.key});
+
+  @override
+  State<WoJobApp> createState() => _WoJobAppState();
+}
+
+class _WoJobAppState extends State<WoJobApp> {
+  final _appLinks = AppLinks();
+  StreamSubscription<Uri>? _linkSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _linkSubscription = _appLinks.uriLinkStream.listen(
+      (uri) => unawaited(_handlePaymentReturn(uri)),
+      onError: (Object error, StackTrace stackTrace) {
+        debugPrint('No se pudo procesar el enlace de retorno: $error');
+      },
+    );
+  }
+
+  Future<void> _handlePaymentReturn(Uri uri) async {
+    if (uri.scheme != 'wojob' ||
+        !{'payment-success', 'payment-cancelled'}.contains(uri.host)) {
+      return;
+    }
+
+    final context = _navigatorKey.currentContext;
+    if (context == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(_handlePaymentReturn(uri));
+      });
+      return;
+    }
+
+    final isSuccessReturn = uri.host == 'payment-success';
+    final authState = context.read<app_state.AuthState>();
+    final user = authState.currentUser;
+    final companyId = user?.empresaId;
+    if (isSuccessReturn &&
+        authState.isBackendEnabled &&
+        user?.isAdmin == true &&
+        companyId != null) {
+      await context.read<EmpresaState>().loadEmpresaData(companyId);
+    }
+
+    _scaffoldMessengerKey.currentState
+      ?..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            isSuccessReturn
+                ? 'Regresaste de Stripe. El plan se activa cuando Supabase '
+                      'confirme la suscripción.'
+                : 'Cancelaste el pago. No se modificó el plan actual.',
+          ),
+        ),
+      );
+  }
+
+  @override
+  void dispose() {
+    unawaited(_linkSubscription?.cancel());
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +107,8 @@ class WoJobApp extends StatelessWidget {
       child: Consumer<SettingsState>(
         builder: (context, settings, _) {
           return MaterialApp(
+            navigatorKey: _navigatorKey,
+            scaffoldMessengerKey: _scaffoldMessengerKey,
             title: 'WoJob',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.light,
