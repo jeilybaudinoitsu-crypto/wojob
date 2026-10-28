@@ -103,3 +103,15 @@ abstract class StorageRepository {
   /// Elimina un archivo.
   Future<void> delete({required String bucket, required String path});
 }
+
+abstract class TermsAcceptanceRepository {
+  Future<bool> hasAcceptedTerms();
+
+  Future<void> acceptTerms();
+}
+
+abstract class FirstRunRepository {
+  Future<bool> isFirstRun();
+
+  Future<void> completeFirstRun();
+}

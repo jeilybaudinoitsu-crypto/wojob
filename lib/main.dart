@@ -7,7 +7,10 @@ import 'package:provider/provider.dart';
 
 import 'package:wojob/core/di/service_locator.dart';
 import 'package:wojob/core/theme/app_theme.dart';
+import 'package:wojob/domain/repositories/repositories.dart';
 import 'package:wojob/presentation/screens/home_router.dart';
+import 'package:wojob/presentation/widgets/first_run_gate.dart';
+import 'package:wojob/presentation/widgets/terms_acceptance_gate.dart';
 import 'package:wojob/presentation/state/auth_state.dart' as app_state;
 import 'package:wojob/presentation/state/empresa_state.dart';
 import 'package:wojob/presentation/state/asistencia_state.dart';
@@ -25,7 +28,14 @@ final _navigatorKey = GlobalKey<NavigatorState>();
 final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 class WoJobApp extends StatefulWidget {
-  const WoJobApp({super.key});
+  const WoJobApp({
+    super.key,
+    this.termsAcceptanceRepository,
+    this.onboardingRepository,
+  });
+
+  final TermsAcceptanceRepository? termsAcceptanceRepository;
+  final FirstRunRepository? onboardingRepository;
 
   @override
   State<WoJobApp> createState() => _WoJobAppState();
@@ -114,7 +124,16 @@ class _WoJobAppState extends State<WoJobApp> {
             theme: AppTheme.light,
             darkTheme: AppTheme.dark,
             themeMode: settings.themeMode,
-            home: const HomeRouter(),
+            home: FirstRunGate(
+              repository:
+                  widget.onboardingRepository ?? sl<FirstRunRepository>(),
+              child: TermsAcceptanceGate(
+                repository:
+                    widget.termsAcceptanceRepository ??
+                    sl<TermsAcceptanceRepository>(),
+                child: const HomeRouter(),
+              ),
+            ),
           );
         },
       ),

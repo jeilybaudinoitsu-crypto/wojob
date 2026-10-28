@@ -8,6 +8,7 @@ import 'package:wojob/core/utils/validators.dart';
 import 'package:wojob/presentation/widgets/app_text_field.dart';
 import 'package:wojob/presentation/widgets/primary_button.dart';
 import 'package:wojob/presentation/widgets/section_card.dart';
+import 'package:wojob/presentation/widgets/wojob_header.dart';
 import 'package:wojob/presentation/widgets/avatar.dart';
 import 'package:wojob/presentation/screens/shared/profile_screen.dart';
 import 'package:wojob/presentation/screens/employee/employee_sala_screen.dart';
@@ -76,8 +77,8 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
     final tieneSala = empresa != null;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Panel del empleado'),
+      appBar: WoJobHeader(
+        title: 'Panel del empleado',
         actions: [
           IconButton(
             icon: const Icon(Icons.person_outline),
