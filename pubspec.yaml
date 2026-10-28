@@ -51,6 +51,7 @@ dependencies:
   latlong2: ^0.10.1
   url_launcher: ^6.3.3
   app_links: ^7.2.2
+  shared_preferences: ^2.5.4
 
 dev_dependencies:
   flutter_test:
