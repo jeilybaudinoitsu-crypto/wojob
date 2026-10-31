@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:wojob/core/errors/app_exception.dart';
+import 'package:wojob/data/datasources/mock_data.dart';
+import 'package:wojob/data/datasources/supabase_service.dart';
 import 'package:wojob/data/models/dia_semana.dart';
 import 'package:wojob/data/models/empresa.dart';
 import 'package:wojob/data/models/horario.dart';
 import 'package:wojob/data/models/perfil.dart';
 import 'package:wojob/data/models/solicitud_sala.dart';
-import 'package:wojob/data/datasources/mock_data.dart';
 import 'package:wojob/domain/repositories/repositories.dart';
 
 const _uuid = Uuid();
@@ -371,7 +372,100 @@ class EmpresaState extends ChangeNotifier {
     return _empresas[empresaId];
   }
 
+  Future<void> updateSalaInfo({
+    required String empresaId,
+    required String passwordSala,
+    required String nombreEmpresa,
+    required String direccionEmpresa,
+    String? nuevaPassword,
+  }) async {
+    if (isBackendEnabled && _empresaRepository != null) {
+      try {
+        final client = SupabaseService.isEnabled
+            ? SupabaseService.client
+            : null;
+        if (client != null) {
+          await client.rpc(
+            'update_empresa_info',
+            params: {
+              'p_empresa_id': empresaId,
+              'p_password': passwordSala,
+              'p_nombre_empresa': nombreEmpresa.trim(),
+              'p_direccion_empresa': direccionEmpresa.trim(),
+              if (nuevaPassword != null && nuevaPassword.isNotEmpty)
+                'p_nueva_password': nuevaPassword,
+            },
+          );
+          // Reload empresa data
+          final empresa = await _empresaRepository!.findById(empresaId);
+          if (empresa != null) {
+            _empresas[empresa.id] = empresa;
+            if (currentEmpresa?.id == empresa.id) currentEmpresa = empresa;
+            notifyListeners();
+          }
+          return;
+        }
+      } catch (e) {
+        if (e is AppException) rethrow;
+        throw UnknownException(
+          'No se pudo actualizar la información de la sala.',
+          cause: e,
+        );
+      }
+    }
+    throw const UnknownException(
+      'Esta acción solo está disponible con Supabase.',
+    );
+  }
+
+  Future<void> removeMember(String empresaId, String memberId) async {
+    if (isBackendEnabled && _empresaRepository != null) {
+      try {
+        final client = SupabaseService.isEnabled
+            ? SupabaseService.client
+            : null;
+        if (client != null) {
+          await client.rpc(
+            'remove_room_member',
+            params: {'p_empresa_id': empresaId, 'p_member_id': memberId},
+          );
+          // Update local state
+          final member = _perfiles[memberId];
+          if (member != null) {
+            _perfiles[memberId] = member.copyWith(
+              empresaId: null,
+              clearEmpresa: true,
+            );
+          }
+          // Remove schedules for this member in this empresa
+          _horarios.removeWhere(
+            (key, value) =>
+                value.empresaId == empresaId && value.empleadoId == memberId,
+          );
+          notifyListeners();
+          return;
+        }
+      } catch (e) {
+        if (e is AppException) rethrow;
+        throw UnknownException('No se pudo eliminar al miembro.', cause: e);
+      }
+    }
+    throw const UnknownException(
+      'Esta acción solo está disponible con Supabase.',
+    );
+  }
+
   void clearError() {
+    backendError = null;
+    notifyListeners();
+  }
+
+  void clearSalaData() {
+    _empresas.clear();
+    _solicitudes.clear();
+    _horarios.clear();
+    _perfiles.clear();
+    currentEmpresa = null;
     backendError = null;
     notifyListeners();
   }

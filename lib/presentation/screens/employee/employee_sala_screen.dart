@@ -3,12 +3,13 @@ import 'package:provider/provider.dart';
 
 import 'package:wojob/data/models/empresa.dart';
 import 'package:wojob/data/models/tipo_asistencia.dart';
+import 'package:wojob/presentation/screens/employee/mark_attendance_screen.dart';
+import 'package:wojob/presentation/screens/shared/schedule_view.dart';
+import 'package:wojob/presentation/state/asistencia_state.dart';
 import 'package:wojob/presentation/state/auth_state.dart' as app_state;
 import 'package:wojob/presentation/state/empresa_state.dart';
-import 'package:wojob/presentation/state/asistencia_state.dart';
+import 'package:wojob/presentation/widgets/room_menu_drawer.dart';
 import 'package:wojob/presentation/widgets/section_card.dart';
-import 'package:wojob/presentation/screens/shared/schedule_view.dart';
-import 'package:wojob/presentation/screens/employee/mark_attendance_screen.dart';
 
 class EmployeeSalaScreen extends StatelessWidget {
   const EmployeeSalaScreen({super.key, required this.empresa});
@@ -23,19 +24,21 @@ class EmployeeSalaScreen extends StatelessWidget {
     final asistenciaState = context.watch<AsistenciaState>();
     final user = authState.currentUser;
     if (user == null) return const SizedBox.shrink();
+    final sala = empresaState.empresaById(empresa.id) ?? empresa;
 
     final horarios = empresaState.horariosDeEmpleado(user.id);
     final asistencias = asistenciaState.historialDeEmpleado(user.id).take(6).toList();
 
     return Scaffold(
+      drawer: RoomMenuDrawer(empresa: sala),
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(empresa.nombreEmpresa),
+            Text(sala.nombreEmpresa),
             Text(
-              empresa.idSala,
+              sala.idSala,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),

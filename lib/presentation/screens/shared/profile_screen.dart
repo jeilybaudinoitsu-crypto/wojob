@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:wojob/data/models/empresa.dart';
+import 'package:wojob/core/errors/app_exception.dart';
 import 'package:wojob/data/datasources/supabase_service.dart';
+import 'package:wojob/data/models/empresa.dart';
 import 'package:wojob/data/repositories/stripe_checkout_repository.dart';
+import 'package:wojob/presentation/screens/welcome_screen.dart';
 import 'package:wojob/presentation/state/auth_state.dart' as app_state;
 import 'package:wojob/presentation/state/empresa_state.dart';
 import 'package:wojob/presentation/state/settings_state.dart';
+import 'package:wojob/presentation/widgets/avatar.dart';
 import 'package:wojob/presentation/widgets/primary_button.dart';
 import 'package:wojob/presentation/widgets/section_card.dart';
-import 'package:wojob/presentation/widgets/avatar.dart';
-import 'package:wojob/presentation/screens/welcome_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -34,10 +36,63 @@ class ProfileScreen extends StatelessWidget {
         children: <Widget>[
           Row(
             children: <Widget>[
-              AppAvatar(
-                initials: user.iniciales,
-                imageUrl: user.fotoUrl,
-                size: 64,
+              GestureDetector(
+                onTap: () async {
+                  final picker = ImagePicker();
+                  final picked = await picker.pickImage(
+                    source: ImageSource.gallery,
+                    imageQuality: 80,
+                  );
+                  if (picked == null) return;
+                  final bytes = await picked.readAsBytes();
+                  try {
+                    await authState.updateProfilePhoto(bytes);
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context)
+                      ..hideCurrentSnackBar()
+                      ..showSnackBar(
+                        const SnackBar(content: Text('Foto de perfil actualizada.')),
+                      );
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context)
+                      ..hideCurrentSnackBar()
+                      ..showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            e is AppException
+                                ? e.message
+                                : 'No se pudo actualizar la foto de perfil.',
+                          ),
+                        ),
+                      );
+                  }
+                },
+                child: Stack(
+                  children: [
+                    AppAvatar(
+                      initials: user.iniciales,
+                      imageUrl: user.fotoUrl,
+                      size: 64,
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt,
+                          size: 14,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(width: 18),
               Expanded(
@@ -62,6 +117,13 @@ class ProfileScreen extends StatelessWidget {
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.68,
                         ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Toca la foto para cambiarla',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.primary,
                       ),
                     ),
                   ],

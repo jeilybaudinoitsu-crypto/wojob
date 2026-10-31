@@ -3,17 +3,18 @@ import 'package:provider/provider.dart';
 
 import 'package:wojob/data/models/empresa.dart';
 import 'package:wojob/data/models/solicitud_sala.dart';
-import 'package:wojob/presentation/state/auth_state.dart' as app_state;
-import 'package:wojob/presentation/state/empresa_state.dart';
-import 'package:wojob/presentation/state/asistencia_state.dart';
-import 'package:wojob/presentation/widgets/section_card.dart';
-import 'package:wojob/presentation/widgets/copyable_field.dart';
-import 'package:wojob/presentation/screens/shared/profile_screen.dart';
-import 'package:wojob/presentation/screens/welcome_screen.dart';
 import 'package:wojob/presentation/screens/admin/assign_shifts_screen.dart';
 import 'package:wojob/presentation/screens/admin/attendance_log_screen.dart';
 import 'package:wojob/presentation/screens/admin/members_screen.dart';
 import 'package:wojob/presentation/screens/admin/requests_screen.dart';
+import 'package:wojob/presentation/screens/shared/profile_screen.dart';
+import 'package:wojob/presentation/screens/welcome_screen.dart';
+import 'package:wojob/presentation/state/asistencia_state.dart';
+import 'package:wojob/presentation/state/auth_state.dart' as app_state;
+import 'package:wojob/presentation/state/empresa_state.dart';
+import 'package:wojob/presentation/widgets/copyable_field.dart';
+import 'package:wojob/presentation/widgets/room_menu_drawer.dart';
+import 'package:wojob/presentation/widgets/section_card.dart';
 
 class AdminSalaScreen extends StatelessWidget {
   const AdminSalaScreen({super.key, required this.empresa});
@@ -25,6 +26,7 @@ class AdminSalaScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final empresaState = context.watch<EmpresaState>();
     final asistenciaState = context.watch<AsistenciaState>();
+    final sala = empresaState.empresaById(empresa.id) ?? empresa;
 
     final miembros = empresaState.miembrosDeEmpresa(empresa.id);
     final empleados = miembros.where((m) => !m.isAdmin).toList();
@@ -36,8 +38,8 @@ class AdminSalaScreen extends StatelessWidget {
     final asistencias = asistenciaState.asistenciasDeEmpresa(empresa.id);
 
     return Scaffold(
-      drawer: _drawer(context, empresa),
-      appBar: AppBar(title: Text(empresa.nombreEmpresa)),
+      drawer: RoomMenuDrawer(empresa: sala),
+      appBar: AppBar(title: Text(sala.nombreEmpresa)),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
