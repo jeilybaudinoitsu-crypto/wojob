@@ -85,6 +85,7 @@ abstract class StorageRepository {
     required String path,
     required Uint8List bytes,
     String contentType = 'image/jpeg',
+    bool upsert = false,
   });
 
   Future<String> createSignedUrl({

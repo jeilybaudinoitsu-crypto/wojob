@@ -13,6 +13,19 @@ with check (
   and (storage.foldername(name))[1] = (select auth.uid())::text
 );
 
+create policy "Users can replace their own profile photo"
+on storage.objects
+for update
+to authenticated
+using (
+  bucket_id = 'avatares'
+  and (storage.foldername(name))[1] = (select auth.uid())::text
+)
+with check (
+  bucket_id = 'avatares'
+  and (storage.foldername(name))[1] = (select auth.uid())::text
+);
+
 create policy "Users can read their own identity documents"
 on storage.objects
 for select

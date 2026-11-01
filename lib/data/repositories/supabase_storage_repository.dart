@@ -17,12 +17,16 @@ class SupabaseStorageRepository implements StorageRepository {
     required String path,
     required Uint8List bytes,
     String contentType = 'image/jpeg',
+    bool upsert = false,
   }) async {
     try {
       await _client.storage.from(bucket).uploadBinary(
             path,
             bytes,
-            fileOptions: sb.FileOptions(contentType: contentType),
+            fileOptions: sb.FileOptions(
+              contentType: contentType,
+              upsert: upsert,
+            ),
           );
       return path;
     } catch (e) {

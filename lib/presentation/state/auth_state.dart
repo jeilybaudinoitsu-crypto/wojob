@@ -129,15 +129,29 @@ class AuthState extends ChangeNotifier {
     }
   }
 
-  Future<Perfil> _hydrateProfile(Perfil profile) async {
+  Future<Perfil> _hydrateProfile(
+    Perfil profile, {
+    bool refreshPhotoCache = false,
+  }) async {
     if (!isBackendEnabled) return profile;
     final storage = _storageRepository!;
-    final photoUrl = profile.fotoUrl == null
+    var photoUrl = profile.fotoUrl == null
         ? null
         : await storage.createSignedUrl(
             bucket: AppConfig.avataresBucket,
             path: profile.fotoUrl!,
           );
+    if (photoUrl != null && refreshPhotoCache) {
+      final uri = Uri.parse(photoUrl);
+      photoUrl = uri
+          .replace(
+            queryParameters: {
+              ...uri.queryParameters,
+              'v': DateTime.now().microsecondsSinceEpoch.toString(),
+            },
+          )
+          .toString();
+    }
     final identityUrl = profile.cedulaUrl == null
         ? null
         : await storage.createSignedUrl(
@@ -469,10 +483,16 @@ class AuthState extends ChangeNotifier {
     return Future.wait(profiles.map(_hydrateProfile));
   }
 
-  Future<Perfil> updateProfile(Perfil profile) async {
+  Future<Perfil> updateProfile(
+    Perfil profile, {
+    bool refreshPhotoCache = false,
+  }) async {
     if (isBackendEnabled) {
       profile = await _authRepository!.updatePhotos(profile);
-      profile = await _hydrateProfile(profile);
+      profile = await _hydrateProfile(
+        profile,
+        refreshPhotoCache: refreshPhotoCache,
+      );
     }
     _perfiles[profile.id] = profile;
     if (currentUser?.id == profile.id) currentUser = profile;
@@ -482,13 +502,14 @@ class AuthState extends ChangeNotifier {
 
   Future<Perfil> updateProfilePhoto(Uint8List bytes) async {
     if (isBackendEnabled && _storageRepository != null && currentUser != null) {
-      final photoPath = await _storageRepository!.upload(
+      final photoPath = await _storageRepository.upload(
         bucket: AppConfig.avataresBucket,
         path: '${currentUser!.id}/foto.jpg',
         bytes: bytes,
+        upsert: true,
       );
       final updatedProfile = currentUser!.copyWith(fotoUrl: photoPath);
-      return updateProfile(updatedProfile);
+      return updateProfile(updatedProfile, refreshPhotoCache: true);
     }
     throw const AuthException('Esta acción solo está disponible con Supabase.');
   }
