@@ -1,6 +1,16 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:wojob/data/models/empresa.dart';
+
+class StripeCheckoutException implements Exception {
+  const StripeCheckoutException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
 
 /// Starts a subscription checkout without exposing Stripe credentials to Flutter.
 class StripeCheckoutRepository {
@@ -17,12 +27,23 @@ class StripeCheckoutRepository {
       );
     }
 
-    final response = await _client.functions.invoke(
-      'create-checkout-session',
-      body: {'plan': plan.dbValue},
-    );
+    late final FunctionResponse response;
+    try {
+      response = await _client.functions.invoke(
+        'create-checkout-session',
+        body: {'plan': plan.dbValue, 'platform': kIsWeb ? 'web' : 'android'},
+      );
+    } on FunctionException catch (error) {
+      final details = error.details;
+      final message = details is Map && details['error'] is String
+          ? details['error'] as String
+          : error.status == 0
+          ? 'No se pudo conectar con la función de pago de Supabase.'
+          : 'La función de pago respondió con HTTP ${error.status}.';
+      throw StripeCheckoutException(message);
+    }
     if (response.status < 200 || response.status >= 300) {
-      throw StateError('Supabase no pudo iniciar el pago.');
+      throw const StripeCheckoutException('Supabase no pudo iniciar el pago.');
     }
 
     final data = response.data;

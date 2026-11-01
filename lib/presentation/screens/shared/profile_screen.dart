@@ -51,7 +51,9 @@ class ProfileScreen extends StatelessWidget {
                     ScaffoldMessenger.of(context)
                       ..hideCurrentSnackBar()
                       ..showSnackBar(
-                        const SnackBar(content: Text('Foto de perfil actualizada.')),
+                        const SnackBar(
+                          content: Text('Foto de perfil actualizada.'),
+                        ),
                       );
                   } catch (e) {
                     if (!context.mounted) return;
@@ -230,7 +232,7 @@ class _SubscriptionSectionState extends State<_SubscriptionSection> {
     } on Exception catch (error, stackTrace) {
       debugPrint('No se pudo iniciar Stripe Checkout: $error\n$stackTrace');
       _showMessage(
-        'No se pudo iniciar el pago. Verifica tu conexión e inténtalo de nuevo.',
+        error is StripeCheckoutException ? error.message : 'No se pudo iniciar el pago. Verifica tu conexión e inténtalo de nuevo.',
       );
     } finally {
       if (mounted) setState(() => _startingPlan = null);

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:app_links/app_links.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
@@ -48,6 +49,9 @@ class _WoJobAppState extends State<WoJobApp> {
   @override
   void initState() {
     super.initState();
+    if (kIsWeb) {
+      unawaited(_handlePaymentReturn(Uri.base));
+    }
     _linkSubscription = _appLinks.uriLinkStream.listen(
       (uri) => unawaited(_handlePaymentReturn(uri)),
       onError: (Object error, StackTrace stackTrace) {
@@ -57,8 +61,14 @@ class _WoJobAppState extends State<WoJobApp> {
   }
 
   Future<void> _handlePaymentReturn(Uri uri) async {
-    if (uri.scheme != 'wojob' ||
-        !{'payment-success', 'payment-cancelled'}.contains(uri.host)) {
+    final isAndroidReturn = uri.scheme == 'wojob' &&
+        {'payment-success', 'payment-cancelled'}.contains(uri.host);
+    final isLocalWebReturn = kIsWeb &&
+        uri.scheme == 'http' &&
+        {'localhost', '127.0.0.1'}.contains(uri.host) &&
+        uri.path == '/' &&
+        {'success', 'cancelled'}.contains(uri.queryParameters['payment']);
+    if (!isAndroidReturn && !isLocalWebReturn) {
       return;
     }
 
@@ -70,7 +80,9 @@ class _WoJobAppState extends State<WoJobApp> {
       return;
     }
 
-    final isSuccessReturn = uri.host == 'payment-success';
+    final isSuccessReturn = isAndroidReturn
+        ? uri.host == 'payment-success'
+        : uri.queryParameters['payment'] == 'success';
     final authState = context.read<app_state.AuthState>();
     final user = authState.currentUser;
     final companyId = user?.empresaId;

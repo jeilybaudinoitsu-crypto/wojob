@@ -113,18 +113,29 @@ Antes de probar, completa la configuración de base de datos y ejecuta
    | `STRIPE_SECRET_KEY` | Clave secreta de pruebas `sk_test_...` |
    | `STRIPE_PRICE_BUSINESS_GOLD` | ID de precio mensual `price_...` |
    | `STRIPE_PRICE_CEO_DIAMOND` | ID de precio mensual `price_...` |
-   | `STRIPE_SUCCESS_URL` | `wojob://payment-success?session_id={CHECKOUT_SESSION_ID}` |
-   | `STRIPE_CANCEL_URL` | `wojob://payment-cancelled` |
+   | `STRIPE_SUCCESS_URL` | `wojob://payment-success?session_id={CHECKOUT_SESSION_ID}` (APK Android) |
+   | `STRIPE_CANCEL_URL` | `wojob://payment-cancelled` (APK Android) |
+   | `STRIPE_SUCCESS_URL_WEB` | `http://localhost:38529/?payment=success&session_id={CHECKOUT_SESSION_ID}` (Flutter Web local) |
+   | `STRIPE_CANCEL_URL_WEB` | `http://localhost:38529/?payment=cancelled` (Flutter Web local) |
    | `STRIPE_WEBHOOK_SECRET` | Se añade en el paso 4, cuando Stripe genere el endpoint |
 
    `SUPABASE_URL` y las claves de API de Supabase ya están disponibles para las
    Edge Functions. **No** guardes una clave `sk_...` o `whsec_...` en Flutter,
    en `assets/config/` ni en el `.env` del cliente. El flujo alojado por Stripe
-   no necesita la publishable key `pk_test_...` de Stripe.
-   Android ya está configurado para abrir los enlaces `wojob://` en la app; la
-   aplicación escucha ambos retornos. En el retorno de éxito, la app refresca
-   la sala, pero solo el webhook firmado confirma y activa el plan.
-3. Enlaza el directorio con tu proyecto y despliega las funciones:
+   no necesita la publishable key `pk_test_...` de Stripe. La función usa el
+   par `STRIPE_SUCCESS_URL`/`STRIPE_CANCEL_URL` en APK Android y el par
+   terminado en `_WEB` en Flutter Web; valida que el retorno web coincida con
+   el `Origin` local de la solicitud. Para que el puerto coincida, ejecuta Web
+   con `flutter run -d chrome --web-port=38529`. Android ya está configurado
+   para abrir los enlaces `wojob://` en la app. En el retorno exitoso, la app
+   refresca la sala, pero solo el webhook firmado confirma y activa el plan.
+3. Despliega las funciones. Si no usas Supabase CLI, hazlo desde el Dashboard:
+   **Edge Functions → create-checkout-session → Edit function → Deploy
+   updates**. Pega el contenido actualizado de
+   [`supabase/functions/create-checkout-session/index.ts`](./supabase/functions/create-checkout-session/index.ts).
+   Repite para `stripe-webhook` solo si también cambiaste ese archivo. La función
+   desplegada debe ser la versión de este repositorio que recibe `platform` y
+   selecciona los secretos `_WEB` o Android. La CLI es opcional:
 
    ```bash
    supabase link --project-ref <PROJECT_REF>

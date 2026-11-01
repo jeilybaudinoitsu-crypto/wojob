@@ -67,9 +67,14 @@ Deno.serve(async (request: Request) => {
     } catch {
       return jsonResponse({ error: "Invalid request body." }, 400);
     }
-    const plan = (input as { plan?: unknown } | null)?.plan;
+    const requestBody = input as { plan?: unknown; platform?: unknown } | null;
+    const plan = requestBody?.plan;
     if (typeof plan !== "string" || !Object.hasOwn(plans, plan)) {
       return jsonResponse({ error: "Unsupported subscription plan." }, 400);
+    }
+    const platform = requestBody?.platform;
+    if (platform !== "web" && platform !== "android") {
+      return jsonResponse({ error: "Unsupported checkout platform." }, 400);
     }
 
     const profileUrl = new URL(`${supabaseUrl}/rest/v1/perfiles`);
@@ -82,8 +87,15 @@ Deno.serve(async (request: Request) => {
       },
     });
     if (!profileResponse.ok) {
-      console.error("Could not verify the checkout user's profile.");
-      return jsonResponse({ error: "Could not verify account permissions." }, 500);
+      console.error(
+        "Could not verify the checkout user's profile.",
+        profileResponse.status,
+        await profileResponse.text(),
+      );
+      return jsonResponse(
+        { error: `No se pudo consultar el perfil (HTTP ${profileResponse.status}).` },
+        500,
+      );
     }
 
     const profiles = await profileResponse.json();
@@ -107,8 +119,17 @@ Deno.serve(async (request: Request) => {
       },
     });
     if (!companyResponse.ok) {
-      console.error("Could not verify the company's current subscription.");
-      return jsonResponse({ error: "Could not verify the current subscription." }, 500);
+      console.error(
+        "Could not verify the company's current subscription.",
+        companyResponse.status,
+        await companyResponse.text(),
+      );
+      return jsonResponse(
+        {
+          error: `No se pudo consultar el plan actual de la empresa (HTTP ${companyResponse.status}).`,
+        },
+        500,
+      );
     }
     const companies = await companyResponse.json();
     if (!Array.isArray(companies) || companies.length !== 1) {
@@ -123,18 +144,43 @@ Deno.serve(async (request: Request) => {
 
     const stripeSecretKey = requiredEnv("STRIPE_SECRET_KEY");
     const priceId = requiredEnv(plans[plan as keyof typeof plans]);
-    const successUrlValue = requiredEnv("STRIPE_SUCCESS_URL");
-    const cancelUrlValue = requiredEnv("STRIPE_CANCEL_URL");
+    const successUrlValue = requiredEnv(
+      platform === "web" ? "STRIPE_SUCCESS_URL_WEB" : "STRIPE_SUCCESS_URL",
+    );
+    const cancelUrlValue = requiredEnv(
+      platform === "web" ? "STRIPE_CANCEL_URL_WEB" : "STRIPE_CANCEL_URL",
+    );
     const successUrl = new URL(successUrlValue);
     const cancelUrl = new URL(cancelUrlValue);
-    if (
-      successUrl.protocol !== "wojob:" ||
-      successUrl.host !== "payment-success" ||
-      successUrl.searchParams.get("session_id") !== "{CHECKOUT_SESSION_ID}" ||
-      cancelUrl.protocol !== "wojob:" ||
-      cancelUrl.host !== "payment-cancelled"
-    ) {
-      throw new Error("Stripe return URLs must use the configured WoJob deep links.");
+    if (platform === "android") {
+      if (
+        successUrl.protocol !== "wojob:" ||
+        successUrl.host !== "payment-success" ||
+        successUrl.searchParams.get("session_id") !== "{CHECKOUT_SESSION_ID}" ||
+        cancelUrl.protocol !== "wojob:" ||
+        cancelUrl.host !== "payment-cancelled"
+      ) {
+        throw new Error("Android Stripe return URLs must use the WoJob deep links.");
+      }
+    } else {
+      const requestOriginValue = request.headers.get("Origin");
+      if (!requestOriginValue) {
+        throw new Error("The web checkout request has no Origin header.");
+      }
+      const requestOrigin = new URL(requestOriginValue);
+      if (
+        requestOrigin.protocol !== "http:" ||
+        !["localhost", "127.0.0.1"].includes(requestOrigin.hostname) ||
+        successUrl.origin !== requestOrigin.origin ||
+        cancelUrl.origin !== requestOrigin.origin ||
+        successUrl.pathname !== "/" ||
+        successUrl.searchParams.get("payment") !== "success" ||
+        successUrl.searchParams.get("session_id") !== "{CHECKOUT_SESSION_ID}" ||
+        cancelUrl.pathname !== "/" ||
+        cancelUrl.searchParams.get("payment") !== "cancelled"
+      ) {
+        throw new Error("Web Stripe return URLs must match the local WoJob origin.");
+      }
     }
     const form = new URLSearchParams({
       mode: "subscription",
@@ -157,15 +203,42 @@ Deno.serve(async (request: Request) => {
       },
       body: form,
     });
-    const session = await stripeResponse.json();
+    const stripeResponseText = await stripeResponse.text();
+    let session: {
+      url?: unknown;
+      error?: { message?: unknown; code?: unknown; type?: unknown };
+    };
+    try {
+      session = JSON.parse(stripeResponseText);
+    } catch {
+      console.error("Stripe returned an invalid response.", stripeResponse.status);
+      return jsonResponse(
+        { error: `Stripe devolvió una respuesta inválida (HTTP ${stripeResponse.status}).` },
+        502,
+      );
+    }
     if (!stripeResponse.ok || typeof session.url !== "string") {
-      console.error("Stripe failed to create a Checkout Session.");
-      return jsonResponse({ error: "Stripe could not start the checkout." }, 502);
+      const stripeMessage = typeof session.error?.message === "string"
+        ? session.error.message
+        : "Stripe no proporcionó un motivo.";
+      console.error("Stripe failed to create a Checkout Session.", {
+        status: stripeResponse.status,
+        code: session.error?.code,
+        type: session.error?.type,
+        message: stripeMessage,
+      });
+      return jsonResponse(
+        { error: `Stripe rechazó el checkout: ${stripeMessage}` },
+        502,
+      );
     }
 
     return jsonResponse({ url: session.url });
   } catch (error) {
     console.error("Checkout session creation failed:", error);
-    return jsonResponse({ error: "Could not start the payment. Check function configuration." }, 500);
+    const message = error instanceof Error
+      ? error.message
+      : "Error inesperado en la configuración del pago.";
+    return jsonResponse({ error: message }, 500);
   }
 });
