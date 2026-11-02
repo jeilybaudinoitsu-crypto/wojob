@@ -18,14 +18,12 @@ class WoJobHeader extends StatelessWidget implements PreferredSizeWidget {
       titleSpacing: 8,
       title: Row(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(5),
-            child: Image.asset(
-              'assets/images/logo.png',
-              width: 68,
-              height: 26,
-              fit: BoxFit.contain,
-            ),
+          Image.asset(
+            'assets/images/logo.png',
+            width: 84,
+            height: 32,
+            fit: BoxFit.contain,
+            semanticLabel: 'WoJob',
           ),
           const SizedBox(width: 10),
           Container(
@@ -39,7 +37,9 @@ class WoJobHeader extends StatelessWidget implements PreferredSizeWidget {
               title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: theme.appBarTheme.titleTextStyle,
+              style: theme.appBarTheme.titleTextStyle?.copyWith(
+                color: Colors.white,
+              ),
             ),
           ),
         ],

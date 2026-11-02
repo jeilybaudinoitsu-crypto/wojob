@@ -12,11 +12,14 @@ import 'package:wojob/presentation/state/auth_state.dart' as app_state;
 import 'package:wojob/presentation/state/empresa_state.dart';
 import 'package:wojob/presentation/state/settings_state.dart';
 import 'package:wojob/presentation/widgets/avatar.dart';
+import 'package:wojob/presentation/widgets/empty_state.dart';
 import 'package:wojob/presentation/widgets/primary_button.dart';
 import 'package:wojob/presentation/widgets/section_card.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({super.key, this.embedded = false});
+
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +27,15 @@ class ProfileScreen extends StatelessWidget {
     final authState = context.watch<app_state.AuthState>();
     final empresaState = context.watch<EmpresaState>();
     final user = authState.currentUser;
-    if (user == null) return const WelcomeScreen();
+    if (user == null) {
+      return embedded
+          ? const EmptyState(
+              title: 'Sin sesión',
+              message: 'Inicia sesión para ver tu información.',
+              icon: Icons.person_outline,
+            )
+          : const WelcomeScreen();
+    }
     final empresa = user.isAdmin
         ? empresaState.empresaById(user.empresaId)
         : null;
@@ -187,9 +198,14 @@ class ProfileScreen extends StatelessWidget {
       ),
     ];
 
+    final body = ListView(
+      padding: const EdgeInsets.all(24),
+      children: children,
+    );
+    if (embedded) return body;
     return Scaffold(
       appBar: AppBar(title: const Text('Mi informacion')),
-      body: ListView(padding: const EdgeInsets.all(24), children: children),
+      body: body,
     );
   }
 }

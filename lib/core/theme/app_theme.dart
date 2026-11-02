@@ -71,6 +71,27 @@ class AppTheme {
         ),
         iconTheme: IconThemeData(color: onSurface),
       ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: surface,
+        surfaceTintColor: Colors.transparent,
+        indicatorColor: AppColors.primary.withValues(
+          alpha: isDark ? 0.28 : 0.12,
+        ),
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => TextStyle(
+            color: states.contains(WidgetState.selected) ? onSurface : muted,
+            fontSize: 11,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w700
+                : FontWeight.w500,
+          ),
+        ),
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            color: states.contains(WidgetState.selected) ? onSurface : muted,
+          ),
+        ),
+      ),
       cardTheme: CardThemeData(
         color: surface,
         elevation: 1,

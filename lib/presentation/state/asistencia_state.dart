@@ -76,7 +76,9 @@ class AsistenciaState extends ChangeNotifier {
     try {
       final user = await _authRepository?.findById(empleadoId);
       if (user == null || !user.estadoActivo) {
-        throw const ValidationException('El empleado no existe o está inactivo.');
+        throw const ValidationException(
+          'El empleado no existe o está inactivo.',
+        );
       }
 
       final id = _uuid.v4();
@@ -98,8 +100,12 @@ class AsistenciaState extends ChangeNotifier {
         longitud: longitud,
         fotoUrl: storedPhoto,
       );
-      final saved = isBackendEnabled ? await _asistenciaRepository!.create(a) : a;
-      final hydrated = isBackendEnabled ? await _hydrateAttendance(saved) : saved;
+      final saved = isBackendEnabled
+          ? await _asistenciaRepository!.create(a)
+          : a;
+      final hydrated = isBackendEnabled
+          ? await _hydrateAttendance(saved)
+          : saved;
       _asistencias[id] = hydrated;
       notifyListeners();
       return _asistencias[id]!;
@@ -122,11 +128,15 @@ class AsistenciaState extends ChangeNotifier {
 
     try {
       _asistencias.clear();
-      for (final asistencia in await _asistenciaRepository!.byEmpresa(empresaId)) {
+      for (final asistencia in await _asistenciaRepository!.byEmpresa(
+        empresaId,
+      )) {
         _asistencias[asistencia.id] = await _hydrateAttendance(asistencia);
       }
     } catch (e) {
-      backendError = e is AppException ? e.message : 'Error al cargar asistencias.';
+      backendError = e is AppException
+          ? e.message
+          : 'Error al cargar asistencias.';
     } finally {
       isLoading = false;
       notifyListeners();
@@ -140,11 +150,15 @@ class AsistenciaState extends ChangeNotifier {
 
     try {
       _asistencias.clear();
-      for (final asistencia in await _asistenciaRepository!.byEmpleado(empleadoId)) {
+      for (final asistencia in await _asistenciaRepository!.byEmpleado(
+        empleadoId,
+      )) {
         _asistencias[asistencia.id] = await _hydrateAttendance(asistencia);
       }
     } catch (e) {
-      backendError = e is AppException ? e.message : 'Error al cargar historial.';
+      backendError = e is AppException
+          ? e.message
+          : 'Error al cargar historial.';
     } finally {
       isLoading = false;
       notifyListeners();
@@ -152,19 +166,13 @@ class AsistenciaState extends ChangeNotifier {
   }
 
   List<Asistencia> historialDeEmpleado(String empleadoId) {
-    return _asistencias.values
-        .where((a) => a.empleadoId == empleadoId)
-        .toList()
-        .reversed
-        .toList();
+    return _asistencias.values.where((a) => a.empleadoId == empleadoId).toList()
+      ..sort((a, b) => b.fechaHora.compareTo(a.fechaHora));
   }
 
   List<Asistencia> asistenciasDeEmpresa(String empresaId) {
-    return _asistencias.values
-        .where((a) => a.empresaId == empresaId)
-        .toList()
-        .reversed
-        .toList();
+    return _asistencias.values.where((a) => a.empresaId == empresaId).toList()
+      ..sort((a, b) => b.fechaHora.compareTo(a.fechaHora));
   }
 
   void clearError() {

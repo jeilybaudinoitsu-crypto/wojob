@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
 import 'package:wojob/core/errors/app_exception.dart';
 import 'package:wojob/data/models/empresa.dart';
+import 'package:wojob/data/models/miembro_sala.dart';
 import 'package:wojob/domain/repositories/repositories.dart';
 
 /// CRUD de salas/empresas sobre la tabla `public.empresas`.
@@ -56,4 +57,18 @@ class SupabaseEmpresaRepository implements EmpresaRepository {
         .toList();
   }
 
+  @override
+  Future<List<MiembroSala>> directorio() async {
+    try {
+      final rows = await _client.rpc('room_member_directory');
+      return (rows as List)
+          .map((e) => MiembroSala.fromMap(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      throw UnknownException(
+        'No se pudo cargar el directorio de la sala.',
+        cause: e,
+      );
+    }
+  }
 }

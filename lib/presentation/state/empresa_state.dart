@@ -7,6 +7,7 @@ import 'package:wojob/data/datasources/supabase_service.dart';
 import 'package:wojob/data/models/dia_semana.dart';
 import 'package:wojob/data/models/empresa.dart';
 import 'package:wojob/data/models/horario.dart';
+import 'package:wojob/data/models/miembro_sala.dart';
 import 'package:wojob/data/models/perfil.dart';
 import 'package:wojob/data/models/solicitud_sala.dart';
 import 'package:wojob/domain/repositories/repositories.dart';
@@ -35,13 +36,25 @@ class EmpresaState extends ChangeNotifier {
   final _solicitudes = <String, SolicitudSala>{};
   final _horarios = <String, Horario>{};
   final _perfiles = <String, Perfil>{};
+  final _directorio = <MiembroSala>[];
+  String? _directorioEmpresaId;
+  int _directorioRequest = 0;
 
   Empresa? currentEmpresa;
   String? backendError;
   bool isLoading = false;
+  bool directorioLoading = false;
+  String? directorioError;
 
   void _seed() {
     _empresas[MockData.empresa.id] = MockData.empresa;
+    for (final perfil in [
+      MockData.admin,
+      MockData.empleado1,
+      MockData.empleado2,
+    ]) {
+      _perfiles[perfil.id] = perfil;
+    }
     for (final s in MockData.solicitudesPendientes) {
       _solicitudes[s.id] = s;
     }
@@ -54,6 +67,53 @@ class EmpresaState extends ChangeNotifier {
   List<SolicitudSala> get solicitudes => _solicitudes.values.toList();
   List<Horario> get horarios => _horarios.values.toList();
   List<Perfil> get perfiles => _perfiles.values.toList();
+  List<MiembroSala> get directorio => List.unmodifiable(_directorio);
+
+  /// empresaId delimita el estado local; la RPC usa exclusivamente auth.uid().
+  Future<void> loadDirectorio(String empresaId) async {
+    final request = ++_directorioRequest;
+    _directorioEmpresaId = empresaId;
+    _directorio.clear();
+    directorioLoading = true;
+    directorioError = null;
+    notifyListeners();
+
+    try {
+      final miembros = isBackendEnabled
+          ? await _empresaRepository!.directorio()
+          : ([MockData.admin, MockData.empleado1, MockData.empleado2]
+                .where(
+                  (perfil) =>
+                      perfil.empresaId == empresaId && perfil.estadoActivo,
+                )
+                .map(
+                  (perfil) => MiembroSala(
+                    nombreCompleto: perfil.nombreCompleto,
+                    cargo: perfil.cargo,
+                    tipoUsuario: perfil.tipoUsuario,
+                  ),
+                )
+                .toList()
+              ..sort((a, b) => a.nombreCompleto.compareTo(b.nombreCompleto)));
+      // Ignora respuestas de una carga anterior o de una sala ya limpiada.
+      if (request != _directorioRequest || _directorioEmpresaId != empresaId) {
+        return;
+      }
+      _directorio.addAll(miembros);
+    } catch (e) {
+      if (request != _directorioRequest || _directorioEmpresaId != empresaId) {
+        return;
+      }
+      directorioError = e is AppException
+          ? e.message
+          : 'No se pudo cargar el directorio de la sala.';
+    } finally {
+      if (request == _directorioRequest && _directorioEmpresaId == empresaId) {
+        directorioLoading = false;
+        notifyListeners();
+      }
+    }
+  }
 
   Empresa? findEmpresaBySalaId(String salaId) {
     final v = salaId.trim().toUpperCase();
@@ -69,6 +129,7 @@ class EmpresaState extends ChangeNotifier {
   }
 
   Future<void> loadEmpresaData(String empresaId) async {
+    if (!isBackendEnabled) return;
     isLoading = true;
     backendError = null;
     notifyListeners();
@@ -397,7 +458,7 @@ class EmpresaState extends ChangeNotifier {
             },
           );
           // Reload empresa data
-          final empresa = await _empresaRepository!.findById(empresaId);
+          final empresa = await _empresaRepository.findById(empresaId);
           if (empresa != null) {
             _empresas[empresa.id] = empresa;
             if (currentEmpresa?.id == empresa.id) currentEmpresa = empresa;
@@ -465,6 +526,11 @@ class EmpresaState extends ChangeNotifier {
     _solicitudes.clear();
     _horarios.clear();
     _perfiles.clear();
+    _directorio.clear();
+    _directorioEmpresaId = null;
+    _directorioRequest++;
+    directorioLoading = false;
+    directorioError = null;
     currentEmpresa = null;
     backendError = null;
     notifyListeners();

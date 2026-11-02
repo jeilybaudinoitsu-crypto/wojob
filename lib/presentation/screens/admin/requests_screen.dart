@@ -12,9 +12,14 @@ import 'package:wojob/presentation/widgets/avatar.dart';
 import 'package:wojob/presentation/widgets/empty_state.dart';
 
 class RequestsScreen extends StatelessWidget {
-  const RequestsScreen({super.key, required this.empresa});
+  const RequestsScreen({
+    super.key,
+    required this.empresa,
+    this.embedded = false,
+  });
 
   final Empresa empresa;
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
@@ -22,48 +27,60 @@ class RequestsScreen extends StatelessWidget {
     final empresaState = context.watch<EmpresaState>();
     final authState = context.watch<app_state.AuthState>();
     final solicitudes = empresaState.solicitudesParaAdmin(empresa.id);
+    final body = _buildBody(theme, empresaState, authState, solicitudes);
+    if (embedded) return body;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          empresaState.isLoading || solicitudes.isEmpty
+              ? 'Solicitudes'
+              : 'Lista de solicitudes',
+        ),
+      ),
+      body: body,
+    );
+  }
 
+  Widget _buildBody(
+    ThemeData theme,
+    EmpresaState empresaState,
+    app_state.AuthState authState,
+    List<SolicitudSala> solicitudes,
+  ) {
     if (empresaState.isLoading) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Solicitudes')),
-        body: const Center(child: CircularProgressIndicator()),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (solicitudes.isEmpty && empresaState.backendError != null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Solicitudes')),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'No se pudieron cargar las solicitudes: '
-                  '${empresaState.backendError}',
-                  textAlign: TextAlign.center,
-                ),
+      return Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'No se pudieron cargar las solicitudes: '
+                '${empresaState.backendError}',
+                textAlign: TextAlign.center,
+              ),
+              if (empresaState.isBackendEnabled) ...[
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () => empresaState.loadEmpresaData(empresa.id),
                   child: const Text('Reintentar'),
                 ),
               ],
-            ),
+            ],
           ),
         ),
       );
     }
 
     if (solicitudes.isEmpty) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Solicitudes')),
-        body: const EmptyState(
-          title: 'Sin solicitudes',
-          message: 'Cuando alguien solicite unirse a tu sala aparecerá aquí.',
-          icon: Icons.mark_email_read_outlined,
-        ),
+      return const EmptyState(
+        title: 'Sin solicitudes',
+        message: 'Cuando alguien solicite unirse a tu sala aparecerá aquí.',
+        icon: Icons.mark_email_read_outlined,
       );
     }
 
@@ -74,18 +91,15 @@ class RequestsScreen extends StatelessWidget {
         .where((s) => s.estado != EstadoSolicitud.pendiente)
         .toList();
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Lista de solicitudes')),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          _grupo(theme, empresaState, authState, 'Pendientes', pendientes),
-          if (resueltas.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            _grupo(theme, empresaState, authState, 'Historial', resueltas),
-          ],
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        _grupo(theme, empresaState, authState, 'Pendientes', pendientes),
+        if (resueltas.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          _grupo(theme, empresaState, authState, 'Historial', resueltas),
         ],
-      ),
+      ],
     );
   }
 
@@ -113,8 +127,12 @@ class RequestsScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(titulo,
-            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+        Text(
+          titulo,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         const SizedBox(height: 12),
         for (final s in lista) ...[
           _solicitudCard(theme, empresaState, authState, s),
@@ -124,26 +142,23 @@ class RequestsScreen extends StatelessWidget {
     );
   }
 
-  Perfil? _perfilPorId(app_state.AuthState authState, String id) {
-    for (final p in authState.perfiles) {
-      if (p.id == id) return p;
-    }
-    return null;
-  }
-
   Widget _solicitudCard(
     ThemeData theme,
     EmpresaState empresaState,
     app_state.AuthState authState,
     SolicitudSala s,
   ) {
-    final perfil = empresaState.perfilById(s.usuarioId) ??
-        _perfilPorId(authState, s.usuarioId);
+    final perfil =
+        empresaState.perfilById(s.usuarioId) ??
+        authState.getPerfil(s.usuarioId);
     return Builder(
       builder: (context) {
         return Card(
           child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8,
+            ),
             leading: AppAvatar(
               initials: perfil?.iniciales ?? '?',
               imageUrl: perfil?.fotoUrl,
@@ -180,8 +195,14 @@ class RequestsScreen extends StatelessWidget {
         color: color.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(estado.label,
-          style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 12)),
+      child: Text(
+        estado.label,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+        ),
+      ),
     );
   }
 
@@ -212,10 +233,12 @@ class RequestsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Center(
-                child: Text(perfil?.nombreCompleto ?? 'Usuario',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    )),
+                child: Text(
+                  perfil?.nombreCompleto ?? 'Usuario',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ),
               const SizedBox(height: 4),
               Center(child: Text(perfil?.cargo ?? 'Solicitante')),
@@ -240,7 +263,9 @@ class RequestsScreen extends StatelessWidget {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                    e is AppException ? e.message : e.toString(),
+                                    e is AppException
+                                        ? e.message
+                                        : e.toString(),
                                   ),
                                 ),
                               );
@@ -267,7 +292,9 @@ class RequestsScreen extends StatelessWidget {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                    e is AppException ? e.message : e.toString(),
+                                    e is AppException
+                                        ? e.message
+                                        : e.toString(),
                                   ),
                                 ),
                               );
@@ -301,12 +328,18 @@ class RequestsScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              )),
+          Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
           Flexible(
-            child: Text(value, style: theme.textTheme.bodyLarge, textAlign: TextAlign.right),
+            child: Text(
+              value,
+              style: theme.textTheme.bodyLarge,
+              textAlign: TextAlign.right,
+            ),
           ),
         ],
       ),

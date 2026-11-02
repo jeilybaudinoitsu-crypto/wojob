@@ -1,178 +1,117 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:wojob/core/utils/formatters.dart';
 import 'package:wojob/data/models/empresa.dart';
 import 'package:wojob/data/models/solicitud_sala.dart';
+import 'package:wojob/data/models/tipo_asistencia.dart';
 import 'package:wojob/presentation/screens/admin/assign_shifts_screen.dart';
 import 'package:wojob/presentation/screens/admin/attendance_log_screen.dart';
 import 'package:wojob/presentation/screens/admin/members_screen.dart';
 import 'package:wojob/presentation/screens/admin/requests_screen.dart';
-import 'package:wojob/presentation/screens/shared/profile_screen.dart';
-import 'package:wojob/presentation/screens/welcome_screen.dart';
 import 'package:wojob/presentation/state/asistencia_state.dart';
 import 'package:wojob/presentation/state/auth_state.dart' as app_state;
 import 'package:wojob/presentation/state/empresa_state.dart';
 import 'package:wojob/presentation/widgets/copyable_field.dart';
 import 'package:wojob/presentation/widgets/room_menu_drawer.dart';
 import 'package:wojob/presentation/widgets/section_card.dart';
+import 'package:wojob/presentation/widgets/wojob_header.dart';
 
-class AdminSalaScreen extends StatelessWidget {
+class AdminSalaScreen extends StatefulWidget {
   const AdminSalaScreen({super.key, required this.empresa});
 
   final Empresa empresa;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final empresaState = context.watch<EmpresaState>();
-    final asistenciaState = context.watch<AsistenciaState>();
-    final sala = empresaState.empresaById(empresa.id) ?? empresa;
+  State<AdminSalaScreen> createState() => _AdminSalaScreenState();
+}
 
-    final miembros = empresaState.miembrosDeEmpresa(empresa.id);
-    final empleados = miembros.where((m) => !m.isAdmin).toList();
-    final admins = miembros.where((m) => m.isAdmin).toList();
-    final solicitudesPend = empresaState
-        .solicitudesParaAdmin(empresa.id)
-        .where((s) => s.estado == EstadoSolicitud.pendiente)
-        .toList();
-    final asistencias = asistenciaState.asistenciasDeEmpresa(empresa.id);
+class _AdminSalaScreenState extends State<AdminSalaScreen> {
+  int _selectedIndex = 0;
 
-    return Scaffold(
-      drawer: RoomMenuDrawer(empresa: sala),
-      appBar: AppBar(title: Text(sala.nombreEmpresa)),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          SectionCard(
-            title: 'Sala ${empresa.idSala}',
-            subtitle: empresa.direccionEmpresa,
-            children: [
-              CopyableField(label: 'ID de sala', value: empresa.idSala),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: _stat(
-                  theme,
-                  'Empleados',
-                  '${empleados.length}',
-                  Icons.groups_outlined,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _stat(
-                  theme,
-                  'Administradores',
-                  '${admins.length}',
-                  Icons.admin_panel_settings_outlined,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _stat(
-                  theme,
-                  'Asistencias',
-                  '${asistencias.length}',
-                  Icons.fact_check_outlined,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _stat(
-                  theme,
-                  'Solicitudes',
-                  '${solicitudesPend.length}',
-                  Icons.mark_email_unread_outlined,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Acciones principales',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 14),
-          _menuTile(
-            context,
-            icon: Icons.calendar_month_outlined,
-            title: 'Ver y asignar turnos',
-            subtitle: 'Asigna horarios y días a cada empleado',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => AssignShiftsScreen(empresa: empresa),
-              ),
-            ),
-          ),
-          _menuTile(
-            context,
-            icon: Icons.schedule_outlined,
-            title: 'Ver horas de llegada y salida',
-            subtitle: 'Historial con hora, foto y ubicación exacta',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => AttendanceLogScreen(empresa: empresa),
-              ),
-            ),
-          ),
-          _menuTile(
-            context,
-            icon: Icons.people_outline,
-            title: 'Ver empleados y administradores',
-            subtitle: 'Miembros registrados en la sala',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => MembersScreen(empresa: empresa),
-              ),
-            ),
-          ),
-          _menuTile(
-            context,
-            icon: Icons.mark_email_unread_outlined,
-            title: 'Ver lista de solicitudes',
-            subtitle: '${solicitudesPend.length} pendientes',
-            badge: solicitudesPend.length,
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => RequestsScreen(empresa: empresa),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final state = context.read<AsistenciaState>();
+      if (state.isBackendEnabled) {
+        state.loadAsistenciasEmpresa(widget.empresa.id);
+      }
+    });
   }
 
-  Widget _stat(ThemeData theme, String label, String value, IconData icon) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+  @override
+  Widget build(BuildContext context) {
+    final empresaState = context.watch<EmpresaState>();
+    final sala = empresaState.empresaById(widget.empresa.id) ?? widget.empresa;
+    final pendientes = empresaState
+        .solicitudesParaAdmin(sala.id)
+        .where((s) => s.estado == EstadoSolicitud.pendiente)
+        .length;
+    const titles = [
+      'Inicio',
+      'Turnos',
+      'Asistencias',
+      'Miembros',
+      'Solicitudes',
+    ];
+
+    return PopScope(
+      canPop: _selectedIndex == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) setState(() => _selectedIndex = 0);
+      },
+      child: Scaffold(
+        drawer: RoomMenuDrawer(empresa: sala),
+        appBar: WoJobHeader(title: titles[_selectedIndex]),
+        body: IndexedStack(
+          index: _selectedIndex,
           children: [
-            Icon(icon, color: theme.colorScheme.primary),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+            _inicio(context, sala),
+            AssignShiftsScreen(empresa: sala, embedded: true),
+            AttendanceLogScreen(empresa: sala, embedded: true),
+            MembersScreen(empresa: sala, embedded: true),
+            RequestsScreen(empresa: sala, embedded: true),
+          ],
+        ),
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: _selectedIndex,
+          onDestinationSelected: (index) =>
+              setState(() => _selectedIndex = index),
+          destinations: [
+            const NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home_rounded),
+              label: 'Inicio',
             ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.68),
+            const NavigationDestination(
+              icon: Icon(Icons.calendar_month_outlined),
+              selectedIcon: Icon(Icons.calendar_month_rounded),
+              label: 'Turnos',
+            ),
+            const NavigationDestination(
+              icon: Icon(Icons.fact_check_outlined),
+              selectedIcon: Icon(Icons.fact_check_rounded),
+              label: 'Asistencias',
+            ),
+            const NavigationDestination(
+              icon: Icon(Icons.people_outline),
+              selectedIcon: Icon(Icons.people_rounded),
+              label: 'Miembros',
+            ),
+            NavigationDestination(
+              icon: Badge(
+                isLabelVisible: pendientes > 0,
+                label: Text('$pendientes'),
+                child: const Icon(Icons.mail_outline),
               ),
+              selectedIcon: Badge(
+                isLabelVisible: pendientes > 0,
+                label: Text('$pendientes'),
+                child: const Icon(Icons.mail_rounded),
+              ),
+              label: 'Solicitudes',
             ),
           ],
         ),
@@ -180,164 +119,123 @@ class AdminSalaScreen extends StatelessWidget {
     );
   }
 
-  Widget _menuTile(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-    int badge = 0,
-  }) {
+  Widget _inicio(BuildContext context, Empresa sala) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Card(
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 18,
-            vertical: 10,
-          ),
-          leading: Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              color: theme.colorScheme.primary.withValues(alpha: 0.12),
-            ),
-            child: Icon(icon, color: theme.colorScheme.primary),
-          ),
-          title: Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          subtitle: Text(subtitle),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (badge > 0)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '$badge',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              const SizedBox(width: 8),
-              const Icon(Icons.chevron_right),
-            ],
-          ),
-          onTap: onTap,
+    final empresaState = context.watch<EmpresaState>();
+    final asistenciaState = context.watch<AsistenciaState>();
+    final user = context.watch<app_state.AuthState>().currentUser;
+    final miembros = empresaState.miembrosDeEmpresa(sala.id);
+    final asistencias = asistenciaState.asistenciasDeEmpresa(sala.id);
+    final recientes = asistencias.take(5).toList();
+
+    return ListView(
+      key: const PageStorageKey('admin-inicio'),
+      padding: const EdgeInsets.all(20),
+      children: [
+        Text(
+          'Hola, ${user?.nombreCompleto ?? 'administrador'}',
+          style: theme.textTheme.headlineSmall,
         ),
-      ),
+        const SizedBox(height: 4),
+        Text(
+          'El resumen de tu sala, en un solo lugar.',
+          style: theme.textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 20),
+        SectionCard(
+          title: sala.nombreEmpresa,
+          leadingIcon: Icons.business_outlined,
+          children: [
+            CopyableField(label: 'ID de sala', value: sala.idSala),
+            const SizedBox(height: 8),
+            InfoTile(
+              title: 'Dirección de la sala',
+              value: sala.direccionEmpresa,
+              icon: Icons.location_on_outlined,
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            Expanded(
+              child: _stat(
+                theme,
+                'Empleados',
+                '${miembros.where((m) => !m.isAdmin).length}',
+                Icons.groups_outlined,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _stat(
+                theme,
+                'Administradores',
+                '${miembros.where((m) => m.isAdmin).length}',
+                Icons.admin_panel_settings_outlined,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        SectionCard(
+          title: 'Asistencias',
+          subtitle: '${asistencias.length} registros de entrada y salida',
+          leadingIcon: Icons.fact_check_outlined,
+          children: [
+            if (asistenciaState.isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (asistenciaState.backendError != null)
+              Text(
+                asistenciaState.backendError!,
+                style: TextStyle(color: theme.colorScheme.error),
+              )
+            else if (recientes.isEmpty)
+              const Text('Aún no hay asistencias en esta sala.')
+            else
+              for (final a in recientes)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    a.tipo == TipoAsistencia.entrada
+                        ? Icons.login_rounded
+                        : Icons.logout_rounded,
+                  ),
+                  title: Text(
+                    empresaState.perfilById(a.empleadoId)?.nombreCompleto ??
+                        'Empleado',
+                  ),
+                  subtitle: Text(
+                    '${a.tipo.label} · ${formatDateShort(a.fechaHora)}',
+                  ),
+                  onTap: () => setState(() => _selectedIndex = 2),
+                ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => setState(() => _selectedIndex = 2),
+                icon: const Icon(Icons.arrow_forward_rounded),
+                label: const Text('Ver todas las asistencias'),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
-  Widget _drawer(BuildContext context, Empresa empresa) {
-    final theme = Theme.of(context);
-    final authState = context.read<app_state.AuthState>();
-    final user = authState.currentUser;
-    return Drawer(
-      child: SafeArea(
+  Widget _stat(ThemeData theme, String label, String value, IconData icon) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(18),
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF800427), Color(0xFF54082D)],
-                      ),
-                    ),
-                    child: const Icon(Icons.work_outline, color: Colors.white),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    empresa.nombreEmpresa,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  Text(
-                    'Sala ${empresa.idSala}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(
-                        alpha: 0.68,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.mark_email_unread_outlined),
-              title: const Text('Ver lista de solicitudes'),
-              onTap: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => RequestsScreen(empresa: empresa),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.person_outline),
-              title: const Text('Ver mi información'),
-              onTap: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                );
-              },
-            ),
-            const Spacer(),
-            const Divider(),
-            ListTile(
-              leading: Icon(Icons.logout, color: theme.colorScheme.error),
-              title: Text(
-                'Salir',
-                style: TextStyle(color: theme.colorScheme.error),
-              ),
-              onTap: () {
-                Navigator.of(context).pop();
-                authState.logout();
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-                  (route) => false,
-                );
-              },
-            ),
-            if (user != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-                child: Text(
-                  'Sesión: ${user.nombreCompleto}\n${user.tipoUsuario.label}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                  ),
-                ),
-              ),
+            Icon(icon, color: theme.colorScheme.primary),
+            const SizedBox(height: 12),
+            Text(value, style: theme.textTheme.headlineSmall),
+            Text(label, style: theme.textTheme.bodySmall),
           ],
         ),
       ),

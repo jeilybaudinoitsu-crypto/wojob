@@ -3,165 +3,170 @@ import 'package:provider/provider.dart';
 
 import 'package:wojob/data/models/empresa.dart';
 import 'package:wojob/data/models/tipo_asistencia.dart';
+import 'package:wojob/presentation/screens/admin/attendance_log_screen.dart';
+import 'package:wojob/presentation/screens/admin/members_screen.dart';
 import 'package:wojob/presentation/screens/employee/mark_attendance_screen.dart';
+import 'package:wojob/presentation/screens/shared/profile_screen.dart';
 import 'package:wojob/presentation/screens/shared/schedule_view.dart';
 import 'package:wojob/presentation/state/asistencia_state.dart';
 import 'package:wojob/presentation/state/auth_state.dart' as app_state;
 import 'package:wojob/presentation/state/empresa_state.dart';
 import 'package:wojob/presentation/widgets/room_menu_drawer.dart';
 import 'package:wojob/presentation/widgets/section_card.dart';
+import 'package:wojob/presentation/widgets/wojob_header.dart';
 
-class EmployeeSalaScreen extends StatelessWidget {
+class EmployeeSalaScreen extends StatefulWidget {
   const EmployeeSalaScreen({super.key, required this.empresa});
 
   final Empresa empresa;
 
   @override
+  State<EmployeeSalaScreen> createState() => _EmployeeSalaScreenState();
+}
+
+class _EmployeeSalaScreenState extends State<EmployeeSalaScreen> {
+  int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final user = context.read<app_state.AuthState>().currentUser;
+      final state = context.read<AsistenciaState>();
+      if (user != null && state.isBackendEnabled) {
+        state.loadAsistenciasEmpleado(user.id);
+      }
+      context.read<EmpresaState>().loadDirectorio(widget.empresa.id);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final authState = context.watch<app_state.AuthState>();
+    final user = context.watch<app_state.AuthState>().currentUser;
     final empresaState = context.watch<EmpresaState>();
-    final asistenciaState = context.watch<AsistenciaState>();
-    final user = authState.currentUser;
     if (user == null) return const SizedBox.shrink();
-    final sala = empresaState.empresaById(empresa.id) ?? empresa;
+    final sala = empresaState.empresaById(widget.empresa.id) ?? widget.empresa;
+    final horarios = empresaState
+        .horariosDeEmpleado(user.id)
+        .where((h) => h.empresaId == sala.id)
+        .toList();
+    const titles = [
+      'Inicio',
+      'Mi historial',
+      'Miembros de la sala',
+      'Mi perfil',
+    ];
 
-    final horarios = empresaState.horariosDeEmpleado(user.id);
-    final asistencias = asistenciaState.historialDeEmpleado(user.id).take(6).toList();
-
-    return Scaffold(
-      drawer: RoomMenuDrawer(empresa: sala),
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+    return PopScope(
+      canPop: _selectedIndex == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) setState(() => _selectedIndex = 0);
+      },
+      child: Scaffold(
+        drawer: RoomMenuDrawer(empresa: sala),
+        appBar: WoJobHeader(title: titles[_selectedIndex]),
+        body: IndexedStack(
+          index: _selectedIndex,
           children: [
-            Text(sala.nombreEmpresa),
-            Text(
-              sala.idSala,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
+            ListView(
+              key: const PageStorageKey('employee-inicio'),
+              padding: const EdgeInsets.all(20),
+              children: [
+                Text(
+                  'Hola, ${user.nombreCompleto}',
+                  style: theme.textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Tu jornada comienza aquí.',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 20),
+                SectionCard(
+                  title: sala.nombreEmpresa,
+                  leadingIcon: Icons.business_outlined,
+                  children: [
+                    InfoTile(
+                      title: 'Dirección de la empresa',
+                      value: sala.direccionEmpresa,
+                      icon: Icons.location_on_outlined,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                SectionCard(
+                  title: 'Mi asistencia',
+                  subtitle: 'Registra tu jornada con foto y ubicación.',
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _irMarca(sala, TipoAsistencia.entrada),
+                        icon: const Icon(Icons.login_rounded),
+                        label: const Text('Marcar entrada'),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _irMarca(sala, TipoAsistencia.salida),
+                        icon: const Icon(Icons.logout_rounded),
+                        label: const Text('Marcar salida'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                ScheduleView(horarios: horarios),
+              ],
+            ),
+            AttendanceLogScreen(
+              empresa: sala,
+              empleadoId: user.id,
+              embedded: true,
+            ),
+            MembersScreen(empresa: sala, embedded: true),
+            const ProfileScreen(embedded: true),
+          ],
+        ),
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: _selectedIndex,
+          onDestinationSelected: (index) =>
+              setState(() => _selectedIndex = index),
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home_rounded),
+              label: 'Inicio',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.history_outlined),
+              selectedIcon: Icon(Icons.history_rounded),
+              label: 'Mi historial',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.people_outline),
+              selectedIcon: Icon(Icons.people_rounded),
+              label: 'Miembros',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.person_outline),
+              selectedIcon: Icon(Icons.person_rounded),
+              label: 'Perfil',
             ),
           ],
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          SectionCard(
-            title: 'Mi sala',
-            subtitle: 'Dirección: ${empresa.direccionEmpresa}',
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: _actionCard(
-                      context,
-                      title: 'Marcar entrada',
-                      icon: Icons.login_outlined,
-                      color: theme.colorScheme.primary,
-                      onTap: () => _irMarca(context, TipoAsistencia.entrada),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _actionCard(
-                      context,
-                      title: 'Marcar salida',
-                      icon: Icons.logout_outlined,
-                      color: theme.colorScheme.secondary,
-                      onTap: () => _irMarca(context, TipoAsistencia.salida),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          ScheduleView(horarios: horarios),
-          const SizedBox(height: 20),
-          SectionCard(
-            title: 'Últimos registros',
-            subtitle: 'Historial reciente de entrada/salida.',
-            children: [
-              if (asistencias.isEmpty)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: theme.colorScheme.primary.withValues(alpha: 0.08),
-                  ),
-                  child: Text('Aún no tienes registros de asistencia.',
-                      style: theme.textTheme.bodySmall),
-                )
-              else
-                for (final a in asistencias) ...[
-                  ListTile(
-                    leading: Icon(
-                      a.tipo == TipoAsistencia.entrada
-                          ? Icons.login_rounded
-                          : Icons.logout_rounded,
-                      color: a.tipo == TipoAsistencia.entrada
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.secondary,
-                    ),
-                    title: Text(a.tipo.label),
-                    subtitle: Text(
-                      '${a.fechaHora.day.toString().padLeft(2, '0')}/${a.fechaHora.month.toString().padLeft(2, '0')}/${a.fechaHora.year} ${a.fechaHora.hour.toString().padLeft(2, '0')}:${a.fechaHora.minute.toString().padLeft(2, '0')} · ${a.latitud.toStringAsFixed(4)}, ${a.longitud.toStringAsFixed(4)}',
-                    ),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  if (a != asistencias.last) const Divider(),
-                ],
-            ],
-          ),
-        ],
-      ),
     );
   }
 
-  void _irMarca(BuildContext context, TipoAsistencia tipo) {
+  void _irMarca(Empresa sala, TipoAsistencia tipo) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => MarkAttendanceScreen(
-          empresa: empresa,
-          tipo: tipo,
-        ),
-      ),
-    );
-  }
-
-  Widget _actionCard(
-    BuildContext context, {
-    required String title,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    final theme = Theme.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          color: color.withValues(alpha: 0.12),
-          border: Border.all(color: color.withValues(alpha: 0.32)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 38),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: color,
-              ),
-            ),
-          ],
-        ),
+        builder: (_) => MarkAttendanceScreen(empresa: sala, tipo: tipo),
       ),
     );
   }

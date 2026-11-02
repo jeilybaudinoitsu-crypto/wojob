@@ -24,7 +24,7 @@ class PrimaryButton extends StatelessWidget {
       mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
       children: [
         if (icon != null) ...[Icon(icon, size: 20), const SizedBox(width: 8)],
-        Text(label),
+        Flexible(child: Text(label, textAlign: TextAlign.center)),
       ],
     );
 

@@ -18,19 +18,20 @@ class AdminHomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final authState = context.watch<app_state.AuthState>();
+    final user = context.watch<app_state.AuthState>().currentUser;
     final empresaState = context.watch<EmpresaState>();
-    final user = authState.currentUser;
     if (user == null) return const SizedBox.shrink();
-
     final empresa = empresaState.empresaById(user.empresaId);
-    final tieneSala = empresa != null;
+    if (empresa != null) {
+      return AdminSalaScreen(key: ValueKey(empresa.id), empresa: empresa);
+    }
 
     return Scaffold(
       appBar: WoJobHeader(
         title: 'Panel de administración',
         actions: [
           IconButton(
+            tooltip: 'Mi perfil',
             icon: const Icon(Icons.person_outline),
             onPressed: () => Navigator.of(context)
                 .push(MaterialPageRoute(builder: (_) => const ProfileScreen())),
@@ -43,7 +44,6 @@ class AdminHomeScreen extends StatelessWidget {
           SectionCard(
             title: 'Bienvenido, ${user.nombreCompleto}',
             subtitle: 'Rol: ${user.tipoUsuario.label} · ID: ${user.idPersonal}',
-            leadingIcon: Icons.waving_hand_outlined,
             children: [
               Row(
                 children: [
@@ -51,9 +51,7 @@ class AdminHomeScreen extends StatelessWidget {
                   const SizedBox(width: 16),
                   Expanded(
                     child: Text(
-                      tieneSala
-                          ? 'Administras la sala: ${empresa.nombreEmpresa} (${empresa.idSala})'
-                          : 'Aún no has creado una sala. Puedes crear una nueva o unirte a una existente.',
+                      'Aún no tienes una sala. Puedes crear una nueva o unirte a una existente.',
                       style: theme.textTheme.bodyMedium,
                     ),
                   ),
@@ -61,69 +59,22 @@ class AdminHomeScreen extends StatelessWidget {
               ),
             ],
           ),
-          if (tieneSala) ...[
-            const SizedBox(height: 20),
-            PrimaryButton(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => AdminSalaScreen(empresa: empresa),
-                ),
-              ),
-              label: 'Entrar a la sala',
-            ),
-            const SizedBox(height: 20),
-            SectionCard(
-              title: 'Acciones rápidas',
-              subtitle: 'Crear o unirte a otra sala.',
-              leadingIcon: Icons.bolt_outlined,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const CreateSalaScreen(),
-                          ),
-                        ),
-                        icon: const Icon(Icons.add_business_outlined),
-                        label: const Text('Crear sala'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const JoinSalaScreen(),
-                          ),
-                        ),
-                        icon: const Icon(Icons.login_outlined),
-                        label: const Text('Unirse a sala'),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ] else ...[
-            const SizedBox(height: 20),
-            PrimaryButton(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const CreateSalaScreen()),
-              ),
-              label: 'Crear una sala',
-              icon: Icons.add_business_outlined,
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: () => Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const JoinSalaScreen())),
-              icon: const Icon(Icons.login_outlined),
-              label: const Text('Unirse a una sala'),
-            ),
-          ],
+          const SizedBox(height: 20),
+          PrimaryButton(
+            onPressed: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const CreateSalaScreen())),
+            label: 'Crear una sala',
+            icon: Icons.add_business_outlined,
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const JoinSalaScreen())),
+            icon: const Icon(Icons.login_outlined),
+            label: const Text('Unirse a una sala'),
+          ),
         ],
       ),
     );

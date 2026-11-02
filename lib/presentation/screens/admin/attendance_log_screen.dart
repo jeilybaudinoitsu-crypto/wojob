@@ -6,15 +6,23 @@ import 'package:wojob/data/models/empresa.dart';
 import 'package:wojob/data/models/tipo_asistencia.dart';
 import 'package:wojob/presentation/state/auth_state.dart' as app_state;
 import 'package:wojob/presentation/state/asistencia_state.dart';
+import 'package:wojob/presentation/state/empresa_state.dart';
 import 'package:wojob/core/utils/formatters.dart';
 import 'package:wojob/presentation/widgets/empty_state.dart';
 import 'package:wojob/presentation/widgets/avatar.dart';
 import 'package:wojob/presentation/widgets/local_image.dart';
 
 class AttendanceLogScreen extends StatefulWidget {
-  const AttendanceLogScreen({super.key, required this.empresa});
+  const AttendanceLogScreen({
+    super.key,
+    required this.empresa,
+    this.embedded = false,
+    this.empleadoId,
+  });
 
   final Empresa empresa;
+  final bool embedded;
+  final String? empleadoId;
 
   @override
   State<AttendanceLogScreen> createState() => _AttendanceLogScreenState();
@@ -25,79 +33,130 @@ class _AttendanceLogScreenState extends State<AttendanceLogScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final body = _buildBody(context);
+    if (widget.embedded) return body;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          widget.empleadoId == null ? 'Llegadas y salidas' : 'Mi historial',
+        ),
+      ),
+      body: body,
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
     final theme = Theme.of(context);
     final asistenciaState = context.watch<AsistenciaState>();
+    final empresaState = context.watch<EmpresaState>();
     final authState = context.watch<app_state.AuthState>();
-    final todas = asistenciaState.asistenciasDeEmpresa(widget.empresa.id);
+    final empleadoId = widget.empleadoId;
+    final todas = empleadoId == null
+        ? asistenciaState.asistenciasDeEmpresa(widget.empresa.id)
+        : asistenciaState.historialDeEmpleado(empleadoId);
     final lista = _filtro == null
         ? todas
         : todas.where((a) => a.tipo == _filtro).toList();
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Llegadas y salidas')),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-            child: Row(
+    final Widget content;
+    if (asistenciaState.isLoading) {
+      content = const Center(child: CircularProgressIndicator());
+    } else if (asistenciaState.backendError != null) {
+      content = Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'No se pudieron cargar los registros: '
+                '${asistenciaState.backendError}',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+              if (asistenciaState.isBackendEnabled) ...[
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () => empleadoId == null
+                      ? asistenciaState.loadAsistenciasEmpresa(
+                          widget.empresa.id,
+                        )
+                      : asistenciaState.loadAsistenciasEmpleado(empleadoId),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Reintentar'),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    } else if (lista.isEmpty) {
+      content = const EmptyState(
+        title: 'Sin registros',
+        message: 'No hay marcas de entrada/salida todavía.',
+        icon: Icons.schedule_outlined,
+      );
+    } else {
+      content = ListView.separated(
+        padding: const EdgeInsets.all(24),
+        itemCount: lista.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 12),
+        itemBuilder: (_, i) =>
+            _card(context, theme, empresaState, authState, lista[i]),
+      );
+    }
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 ChoiceChip(
                   label: const Text('Todas'),
                   selected: _filtro == null,
                   onSelected: (_) => setState(() => _filtro = null),
                 ),
-                const SizedBox(width: 8),
                 ChoiceChip(
                   label: const Text('Entradas'),
                   selected: _filtro == TipoAsistencia.entrada,
-                  onSelected: (_) => setState(() => _filtro = TipoAsistencia.entrada),
+                  onSelected: (_) =>
+                      setState(() => _filtro = TipoAsistencia.entrada),
                 ),
-                const SizedBox(width: 8),
                 ChoiceChip(
                   label: const Text('Salidas'),
                   selected: _filtro == TipoAsistencia.salida,
-                  onSelected: (_) => setState(() => _filtro = TipoAsistencia.salida),
+                  onSelected: (_) =>
+                      setState(() => _filtro = TipoAsistencia.salida),
                 ),
               ],
             ),
           ),
-          Expanded(
-            child: lista.isEmpty
-                ? const EmptyState(
-                    title: 'Sin registros',
-                    message: 'No hay marcas de entrada/salida todavía.',
-                    icon: Icons.schedule_outlined,
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.all(24),
-                    itemCount: lista.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 12),
-                    itemBuilder: (_, i) => _card(context, theme, authState, lista[i]),
-                  ),
-          ),
-        ],
-      ),
+        ),
+        Expanded(child: content),
+      ],
     );
   }
 
   Widget _card(
     BuildContext context,
     ThemeData theme,
+    EmpresaState empresaState,
     app_state.AuthState authState,
     Asistencia a,
   ) {
-    String nombre = 'Empleado';
-    String? foto;
-    for (final p in authState.perfiles) {
-      if (p.id == a.empleadoId) {
-        nombre = p.nombreCompleto;
-        foto = p.fotoUrl;
-        break;
-      }
-    }
+    final perfil =
+        empresaState.perfilById(a.empleadoId) ??
+        authState.getPerfil(a.empleadoId);
+    final nombre = perfil?.nombreCompleto ?? 'Empleado';
     final esEntrada = a.tipo == TipoAsistencia.entrada;
-    final color = esEntrada ? theme.colorScheme.primary : theme.colorScheme.secondary;
+    final color = esEntrada
+        ? theme.colorScheme.primary
+        : theme.colorScheme.secondary;
 
     return Card(
       child: Padding(
@@ -106,8 +165,8 @@ class _AttendanceLogScreenState extends State<AttendanceLogScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AppAvatar(
-              initials: nombre.substring(0, 1).toUpperCase(),
-              imageUrl: foto,
+              initials: perfil?.iniciales ?? '?',
+              imageUrl: perfil?.fotoUrl,
               size: 48,
             ),
             const SizedBox(width: 14),
@@ -115,16 +174,22 @@ class _AttendanceLogScreenState extends State<AttendanceLogScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Expanded(
-                        child: Text(nombre,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            )),
+                      Text(
+                        nombre,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: color.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(20),
@@ -133,32 +198,45 @@ class _AttendanceLogScreenState extends State<AttendanceLogScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              esEntrada ? Icons.login_rounded : Icons.logout_rounded,
+                              esEntrada
+                                  ? Icons.login_rounded
+                                  : Icons.logout_rounded,
                               size: 14,
                               color: color,
                             ),
                             const SizedBox(width: 4),
-                            Text(a.tipo.label,
-                                style: TextStyle(
-                                  color: color,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                )),
+                            Text(
+                              a.tipo.label,
+                              style: TextStyle(
+                                color: color,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ],
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  _line(theme, Icons.access_time_outlined, formatDateShort(a.fechaHora)),
+                  _line(
+                    theme,
+                    Icons.access_time_outlined,
+                    formatDateShort(a.fechaHora),
+                  ),
                   const SizedBox(height: 4),
-                  _line(theme, Icons.location_on_outlined,
-                      formatCoordinates(a.latitud, a.longitud)),
+                  _line(
+                    theme,
+                    Icons.location_on_outlined,
+                    formatCoordinates(a.latitud, a.longitud),
+                  ),
                   const SizedBox(height: 10),
-                  Row(
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       _thumb(a.fotoUrl, 'Foto de marcación'),
-                      const SizedBox(width: 12),
                       TextButton.icon(
                         onPressed: () => _verDetalle(context, theme, nombre, a),
                         icon: const Icon(Icons.visibility_outlined, size: 18),
@@ -178,11 +256,13 @@ class _AttendanceLogScreenState extends State<AttendanceLogScreen> {
   Widget _line(ThemeData theme, IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(text, style: theme.textTheme.bodyMedium),
+        Icon(
+          icon,
+          size: 16,
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
         ),
+        const SizedBox(width: 6),
+        Expanded(child: Text(text, style: theme.textTheme.bodyMedium)),
       ],
     );
   }
@@ -198,13 +278,20 @@ class _AttendanceLogScreenState extends State<AttendanceLogScreen> {
       clipBehavior: Clip.antiAlias,
       child: localPhotoExists(path)
           ? LocalImage(path: path!)
-          : Icon(Icons.image_not_supported_outlined,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+          : Icon(
+              Icons.image_not_supported_outlined,
+              color: Theme.of(context).colorScheme.onSurface
+                  .withValues(alpha: 0.5),
+            ),
     );
   }
 
   void _verDetalle(
-      BuildContext context, ThemeData theme, String nombre, Asistencia a) {
+    BuildContext context,
+    ThemeData theme,
+    String nombre,
+    Asistencia a,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -216,8 +303,12 @@ class _AttendanceLogScreenState extends State<AttendanceLogScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Detalle de ${a.tipo.label.toLowerCase()}',
-                  style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+              Text(
+                'Detalle de ${a.tipo.label.toLowerCase()}',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               const SizedBox(height: 4),
               Text(nombre, style: theme.textTheme.bodyMedium),
               const SizedBox(height: 20),
@@ -265,10 +356,12 @@ class _AttendanceLogScreenState extends State<AttendanceLogScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              )),
+          Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
           Text(value, style: theme.textTheme.bodyLarge),
         ],
       ),

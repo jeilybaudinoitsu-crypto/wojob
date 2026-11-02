@@ -45,19 +45,20 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
 
   Future<void> _tomarFoto() async {
     final res = await _media.takeFromCamera();
-    if (res == null) return;
+    if (res == null || !mounted) return;
     setState(() => _foto = res);
   }
 
   Future<void> _galeria() async {
     final res = await _media.takeFromGallery();
-    if (res == null) return;
+    if (res == null || !mounted) return;
     setState(() => _foto = res);
   }
 
   Future<void> _obtenerUbicacion() async {
     setState(() => _gettingLoc = true);
     final geo = await _location.getCurrentLocation();
+    if (!mounted) return;
     setState(() {
       _geo = geo;
       _gettingLoc = false;

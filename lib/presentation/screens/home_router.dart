@@ -17,6 +17,7 @@ class HomeRouter extends StatefulWidget {
 
 class _HomeRouterState extends State<HomeRouter> {
   String? _loadingCompanyFor;
+  bool _companyLoadPending = false;
 
   @override
   Widget build(BuildContext context) {
@@ -28,14 +29,22 @@ class _HomeRouterState extends State<HomeRouter> {
       final loadKey = '${user!.id}:$companyId';
       if (_loadingCompanyFor != loadKey) {
         _loadingCompanyFor = loadKey;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            context.read<EmpresaState>().loadEmpresaData(companyId);
+        _companyLoadPending = empresaState.isBackendEnabled;
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          if (!mounted) return;
+          await context.read<EmpresaState>().loadEmpresaData(companyId);
+          if (mounted && _loadingCompanyFor == loadKey) {
+            setState(() => _companyLoadPending = false);
           }
         });
       }
     } else {
       _loadingCompanyFor = null;
+      _companyLoadPending = false;
+    }
+
+    if (_companyLoadPending) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final Widget screen;

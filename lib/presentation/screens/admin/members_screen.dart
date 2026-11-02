@@ -7,13 +7,19 @@ import 'package:wojob/data/models/perfil.dart';
 import 'package:wojob/presentation/state/auth_state.dart' as app_state;
 import 'package:wojob/presentation/state/empresa_state.dart';
 import 'package:wojob/presentation/widgets/avatar.dart';
+import 'package:wojob/presentation/widgets/empty_state.dart';
 import 'package:wojob/presentation/widgets/section_card.dart';
 import 'package:wojob/presentation/screens/admin/member_detail_screen.dart';
 
 class MembersScreen extends StatelessWidget {
-  const MembersScreen({super.key, required this.empresa});
+  const MembersScreen({
+    super.key,
+    required this.empresa,
+    this.embedded = false,
+  });
 
   final Empresa empresa;
+  final bool embedded;
 
   Future<void> _removeMember(BuildContext context, Perfil miembro) async {
     final theme = Theme.of(context);
@@ -22,7 +28,11 @@ class MembersScreen extends StatelessWidget {
     if (currentUser == null || !currentUser.isAdmin) return;
     if (miembro.id == currentUser.id) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No puedes eliminarte a ti mismo. Usa la opción Salir de la sala.')),
+        const SnackBar(
+          content: Text(
+            'No puedes eliminarte a ti mismo. Usa la opción Salir de la sala.',
+          ),
+        ),
       );
       return;
     }
@@ -43,13 +53,15 @@ class MembersScreen extends StatelessWidget {
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(foregroundColor: theme.colorScheme.error),
+            style: TextButton.styleFrom(
+              foregroundColor: theme.colorScheme.error,
+            ),
             child: const Text('Eliminar'),
           ),
         ],
       ),
     );
-    if (confirmed != true) return;
+    if (confirmed != true || !context.mounted) return;
 
     try {
       await context.read<EmpresaState>().removeMember(empresa.id, miembro.id);
@@ -57,7 +69,11 @@ class MembersScreen extends StatelessWidget {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          SnackBar(content: Text('${miembro.nombreCompleto} fue eliminado de la sala.')),
+          SnackBar(
+            content: Text(
+              '${miembro.nombreCompleto} fue eliminado de la sala.',
+            ),
+          ),
         );
     } catch (e) {
       if (!context.mounted) return;
@@ -65,7 +81,9 @@ class MembersScreen extends StatelessWidget {
         ..hideCurrentSnackBar()
         ..showSnackBar(
           SnackBar(
-            content: Text(e is AppException ? e.message : 'No se pudo eliminar al miembro.'),
+            content: Text(
+              e is AppException ? e.message : 'No se pudo eliminar al miembro.',
+            ),
           ),
         );
     }
@@ -81,32 +99,93 @@ class MembersScreen extends StatelessWidget {
     final admins = miembros.where((m) => m.isAdmin).toList();
     final isAdmin = authState.currentUser?.isAdmin ?? false;
 
+    final body = isAdmin
+        ? ListView(
+            padding: const EdgeInsets.all(24),
+            children: [
+              _section(
+                context,
+                theme,
+                empresa,
+                'Empleados registrados',
+                Icons.groups_outlined,
+                empleados,
+                isAdmin: isAdmin,
+              ),
+              const SizedBox(height: 20),
+              _section(
+                context,
+                theme,
+                empresa,
+                'Administradores',
+                Icons.admin_panel_settings_outlined,
+                admins,
+                isAdmin: isAdmin,
+              ),
+            ],
+          )
+        : _buildDirectorio(theme, empresaState);
+    if (embedded) return body;
     return Scaffold(
       appBar: AppBar(title: const Text('Miembros de la sala')),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          _section(
-            context,
-            theme,
-            empresa,
-            'Empleados registrados',
-            Icons.groups_outlined,
-            empleados,
-            isAdmin: isAdmin,
+      body: body,
+    );
+  }
+
+  Widget _buildDirectorio(ThemeData theme, EmpresaState empresaState) {
+    if (empresaState.directorioLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (empresaState.directorioError != null) {
+      return SingleChildScrollView(
+        child: EmptyState(
+          title: 'No se pudo cargar el directorio',
+          message: empresaState.directorioError!,
+          icon: Icons.error_outline,
+          action: FilledButton.icon(
+            onPressed: () => empresaState.loadDirectorio(empresa.id),
+            icon: const Icon(Icons.refresh),
+            label: const Text('Reintentar'),
           ),
-          const SizedBox(height: 20),
-          _section(
-            context,
-            theme,
-            empresa,
-            'Administradores',
-            Icons.admin_panel_settings_outlined,
-            admins,
-            isAdmin: isAdmin,
-          ),
-        ],
-      ),
+        ),
+      );
+    }
+    final miembros = empresaState.directorio;
+    if (miembros.isEmpty) {
+      return const EmptyState(
+        title: 'Sin miembros',
+        message: 'No hay miembros en el directorio de esta sala.',
+        icon: Icons.groups_outlined,
+      );
+    }
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        SectionCard(
+          title: 'Directorio de la sala',
+          subtitle: '${miembros.length} miembro(s) activo(s)',
+          children: [
+            for (final miembro in miembros) ...[
+              ListTile(
+                title: Text(miembro.nombreCompleto),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(miembro.cargo ?? 'Sin cargo'),
+                    Text('Rol: ${miembro.tipoUsuario.label}'),
+                    Text(
+                      'Estado: Activo',
+                      style: TextStyle(color: theme.colorScheme.primary),
+                    ),
+                  ],
+                ),
+                contentPadding: EdgeInsets.zero,
+              ),
+              if (miembro != miembros.last) const Divider(),
+            ],
+          ],
+        ),
+      ],
     );
   }
 
@@ -126,22 +205,34 @@ class MembersScreen extends StatelessWidget {
       subtitle: '${lista.length} miembro(s)',
       children: [
         if (lista.isEmpty)
-          Text('Sin miembros en esta categoría.',
-              style: theme.textTheme.bodyMedium)
+          Text(
+            'Sin miembros en esta categoría.',
+            style: theme.textTheme.bodyMedium,
+          )
         else
           for (final p in lista) ...[
             ListTile(
               leading: AppAvatar(initials: p.iniciales, imageUrl: p.fotoUrl),
               title: Text(p.nombreCompleto),
-              subtitle: Text('${p.idPersonal} · ${p.cargo ?? p.tipoUsuario.label}'),
+              subtitle: Text(
+                isAdmin
+                    ? '${p.idPersonal} · ${p.cargo ?? p.tipoUsuario.label}'
+                    : '${p.cargo ?? 'Sin cargo'} · ${p.tipoUsuario.label}',
+              ),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      color: (p.estadoActivo ? theme.colorScheme.primary : theme.colorScheme.error)
-                          .withValues(alpha: 0.12),
+                      color:
+                          (p.estadoActivo
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.error)
+                              .withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -157,22 +248,25 @@ class MembersScreen extends StatelessWidget {
                   ),
                   if (isAdmin && !p.isAdmin && p.id != currentUserId)
                     IconButton(
-                      icon: Icon(Icons.person_remove_outlined, color: theme.colorScheme.error),
+                      icon: Icon(
+                        Icons.person_remove_outlined,
+                        color: theme.colorScheme.error,
+                      ),
                       tooltip: 'Eliminar de la sala',
                       onPressed: () => _removeMember(context, p),
                     ),
-                  const Icon(Icons.chevron_right),
+                  if (isAdmin) const Icon(Icons.chevron_right),
                 ],
               ),
               contentPadding: EdgeInsets.zero,
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => MemberDetailScreen(
-                    empresa: empresa,
-                    miembro: p,
-                  ),
-                ),
-              ),
+              onTap: isAdmin
+                  ? () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            MemberDetailScreen(empresa: empresa, miembro: p),
+                      ),
+                    )
+                  : null,
             ),
             if (p != lista.last) const Divider(),
           ],

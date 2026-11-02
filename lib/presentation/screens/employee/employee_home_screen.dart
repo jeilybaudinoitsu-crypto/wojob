@@ -9,7 +9,6 @@ import 'package:wojob/presentation/widgets/app_text_field.dart';
 import 'package:wojob/presentation/widgets/primary_button.dart';
 import 'package:wojob/presentation/widgets/section_card.dart';
 import 'package:wojob/presentation/widgets/wojob_header.dart';
-import 'package:wojob/presentation/widgets/avatar.dart';
 import 'package:wojob/presentation/screens/shared/profile_screen.dart';
 import 'package:wojob/presentation/screens/employee/employee_sala_screen.dart';
 
@@ -34,10 +33,9 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
 
   Future<void> _unirse() async {
     if (!_formKey.currentState!.validate()) return;
-    final authState = context.read<app_state.AuthState>();
-    final empresaState = context.read<EmpresaState>();
-    final user = authState.currentUser;
+    final user = context.read<app_state.AuthState>().currentUser;
     if (user == null) return;
+    final empresaState = context.read<EmpresaState>();
     setState(() {
       _loading = true;
       _msg = null;
@@ -48,17 +46,15 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
         usuarioId: user.id,
       );
       if (mounted) {
-        setState(() {
-          _msg = ok
+        setState(
+          () => _msg = ok
               ? 'Solicitud enviada. Espera a que el administrador la acepte.'
-              : 'No se encontró la sala o ya tienes una solicitud pendiente.';
-        });
+              : 'No se encontró la sala o ya tienes una solicitud pendiente.',
+        );
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _msg = e is AppException ? e.message : e.toString();
-        });
+        setState(() => _msg = e is AppException ? e.message : e.toString());
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -68,137 +64,68 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final authState = context.watch<app_state.AuthState>();
+    final user = context.watch<app_state.AuthState>().currentUser;
     final empresaState = context.watch<EmpresaState>();
-    final user = authState.currentUser;
     if (user == null) return const SizedBox.shrink();
-
     final empresa = empresaState.empresaById(user.empresaId);
-    final tieneSala = empresa != null;
+    if (empresa != null) {
+      return EmployeeSalaScreen(key: ValueKey(empresa.id), empresa: empresa);
+    }
 
     return Scaffold(
       appBar: WoJobHeader(
         title: 'Panel del empleado',
         actions: [
           IconButton(
+            tooltip: 'Mi perfil',
             icon: const Icon(Icons.person_outline),
-            onPressed: () {
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
-            },
+            onPressed: () => Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const ProfileScreen())),
           ),
         ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
+          Text(
+            'Bienvenido, ${user.nombreCompleto}',
+            style: theme.textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 20),
           SectionCard(
-            title: 'Bienvenido, ${user.nombreCompleto}',
-            subtitle:
-                'ID personal: ${user.idPersonal} · Cargo: ${user.cargo ?? 'Empleado'}',
-            leadingIcon: Icons.waving_hand_outlined,
+            title: 'Unirte a sala',
+            subtitle: 'Aún no perteneces a una sala. Ingresa su ID para solicitar acceso.',
             children: [
-              Row(
-                children: [
-                  AppAvatar(initials: user.iniciales, imageUrl: user.fotoUrl),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      tieneSala
-                          ? 'Te encuentras en la sala: ${empresa.nombreEmpresa} (${empresa.idSala})'
-                          : 'Aún no perteneces a ninguna sala. Únete a una con el ID de la sala.',
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  ),
-                ],
+              Form(
+                key: _formKey,
+                child: AppTextField(
+                  controller: _salaIdCtrl,
+                  label: 'ID de sala',
+                  hint: 'Ej. NOR-4826',
+                  prefixIcon: Icons.meeting_room_outlined,
+                  textInputAction: TextInputAction.done,
+                  validator: Validators.salaId,
+                ),
               ),
+              const SizedBox(height: 16),
+              PrimaryButton(
+                onPressed: _loading ? null : _unirse,
+                label: _loading
+                    ? 'Enviando...'
+                    : 'Enviar solicitud para unirme',
+              ),
+              if (_msg != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  _msg!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ],
           ),
-          if (tieneSala) ...[
-            const SizedBox(height: 20),
-            PrimaryButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => EmployeeSalaScreen(empresa: empresa),
-                  ),
-                );
-              },
-              label: 'Entrar a mi sala',
-            ),
-            const SizedBox(height: 20),
-            SectionCard(
-              title: '¿Unirte a otra sala?',
-              subtitle:
-                  'Puedes enviar una nueva solicitud con otro ID de sala.',
-              leadingIcon: Icons.meeting_room_outlined,
-              children: [
-                Form(
-                  key: _formKey,
-                  child: AppTextField(
-                    controller: _salaIdCtrl,
-                    label: 'ID de sala',
-                    hint: 'Ej. NOR-4826',
-                    prefixIcon: Icons.meeting_room_outlined,
-                    textInputAction: TextInputAction.done,
-                    validator: Validators.salaId,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                PrimaryButton(
-                  onPressed: _loading ? null : _unirse,
-                  label: _loading ? 'Enviando...' : 'Enviar solicitud',
-                ),
-                if (_msg != null) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    _msg!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ] else ...[
-            const SizedBox(height: 20),
-            SectionCard(
-              title: 'Unirte a sala',
-              subtitle: 'Ingresa el ID de la sala para solicitar acceso.',
-              children: [
-                Form(
-                  key: _formKey,
-                  child: AppTextField(
-                    controller: _salaIdCtrl,
-                    label: 'ID de sala',
-                    hint: 'Ej. NOR-4826',
-                    prefixIcon: Icons.meeting_room_outlined,
-                    textInputAction: TextInputAction.done,
-                    validator: Validators.salaId,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                PrimaryButton(
-                  onPressed: _loading ? null : _unirse,
-                  label: _loading
-                      ? 'Enviando...'
-                      : 'Enviar solicitud para unirme',
-                ),
-                if (_msg != null) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    _msg!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ],
         ],
       ),
     );

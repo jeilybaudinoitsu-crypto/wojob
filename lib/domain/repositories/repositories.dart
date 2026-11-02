@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:wojob/data/models/asistencia.dart';
 import 'package:wojob/data/models/empresa.dart';
 import 'package:wojob/data/models/horario.dart';
+import 'package:wojob/data/models/miembro_sala.dart';
 import 'package:wojob/data/models/perfil.dart';
 import 'package:wojob/data/models/solicitud_sala.dart';
 
@@ -53,6 +54,9 @@ abstract class EmpresaRepository {
   Future<Empresa?> findById(String id);
   Future<Empresa?> findBySalaId(String idSala);
   Future<List<Empresa>> all();
+
+  /// Directorio mínimo de la sala del usuario autenticado.
+  Future<List<MiembroSala>> directorio();
 }
 
 abstract class SolicitudRepository {
