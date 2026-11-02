@@ -104,8 +104,13 @@ Antes de probar, completa la configuración de base de datos y ejecuta
 
 1. En Stripe, activa **test mode** y crea los productos BUSINESS GOLD y CEO
    DIAMOND con precios **recurrentes mensuales**. Usa la moneda que quieres
-   cobrar y precios que coincidan con los importes mostrados en la app; copia
-   los dos identificadores `price_...`.
+   cobrar y precios que coincidan con los importes mostrados en la app. Copia
+   los IDs de precio `price_...` (no los IDs de producto `prod_...`). Si
+   Managed Payments está habilitado en Stripe, edita cada producto y asigna un
+   **Product tax code** que Stripe marque como elegible para Managed Payments.
+   Para este software de suscripción B2B, `txcd_10103001` (SaaS - business use)
+   puede ser apropiado si describe correctamente lo que vendes; confirma la
+   clasificación en Stripe antes de guardarla.
 2. En Supabase, abre **Edge Functions → Secrets** y añade:
 
    | Nombre | Valor |

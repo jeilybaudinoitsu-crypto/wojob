@@ -144,6 +144,11 @@ Deno.serve(async (request: Request) => {
 
     const stripeSecretKey = requiredEnv("STRIPE_SECRET_KEY");
     const priceId = requiredEnv(plans[plan as keyof typeof plans]);
+    if (!/^price_[A-Za-z0-9]+$/.test(priceId)) {
+      throw new Error(
+        `Invalid ${plans[plan as keyof typeof plans]}: expected a Stripe price ID beginning with price_.`,
+      );
+    }
     const successUrlValue = requiredEnv(
       platform === "web" ? "STRIPE_SUCCESS_URL_WEB" : "STRIPE_SUCCESS_URL",
     );
@@ -186,6 +191,7 @@ Deno.serve(async (request: Request) => {
       mode: "subscription",
       success_url: successUrlValue,
       cancel_url: cancelUrlValue,
+      // Stripe expects the Price ID itself here, not a /v1/prices/... path.
       client_reference_id: profile.empresa_id,
       customer_email: profile.correo,
       "line_items[0][price]": priceId,

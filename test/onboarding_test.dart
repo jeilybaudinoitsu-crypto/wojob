@@ -40,6 +40,25 @@ void main() {
     expect(find.text('Control de asistencia'), findsNothing);
   });
 
+  testWidgets('permite reintentar si falla la lectura inicial', (
+    tester,
+  ) async {
+    final repository = _FailOnceFirstRunRepository();
+    await tester.pumpWidget(_app(repository));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('No se pudo comprobar el estado de bienvenida.'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Reintentar'));
+    await tester.pumpAndSettle();
+
+    expect(repository.readAttempts, 2);
+    expect(find.text('Contenido principal'), findsOneWidget);
+  });
+
   testWidgets('explica las funciones antes de mostrar los términos legales', (
     tester,
   ) async {
@@ -95,6 +114,22 @@ class _MemoryFirstRunRepository implements FirstRunRepository {
   Future<void> completeFirstRun() async {
     firstRun = false;
   }
+}
+
+class _FailOnceFirstRunRepository implements FirstRunRepository {
+  int readAttempts = 0;
+
+  @override
+  Future<bool> isFirstRun() async {
+    readAttempts++;
+    if (readAttempts == 1) {
+      throw StateError('Fallo temporal de lectura.');
+    }
+    return false;
+  }
+
+  @override
+  Future<void> completeFirstRun() async {}
 }
 
 class _MemoryTermsRepository implements TermsAcceptanceRepository {

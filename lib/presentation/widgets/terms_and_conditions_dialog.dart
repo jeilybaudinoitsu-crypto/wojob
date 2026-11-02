@@ -92,8 +92,9 @@ class _TermsAndConditionsDialogState extends State<TermsAndConditionsDialog> {
                         Text(
                           'WoJob puede solicitar la ubicación GPS al realizar '
                           'una marcación de asistencia para registrar el lugar '
-                          'en que se efectúa. La ubicación se utiliza para '
-                          'esta función y requiere los permisos del dispositivo.',
+                          'en que se efectúa. No se recopila en segundo plano. '
+                          'La ubicación se utiliza para esta función y requiere '
+                          'los permisos del dispositivo.',
                         ),
                       ],
                     ),
@@ -107,7 +108,9 @@ class _TermsAndConditionsDialogState extends State<TermsAndConditionsDialog> {
                           'Al marcar asistencia, la aplicación puede capturar '
                           'una fotografía para respaldar la marcación y ayudar '
                           'a verificar la identidad del usuario. La cámara se '
-                          'utiliza con tu autorización.',
+                          'utiliza con tu autorización. Si eliges una imagen '
+                          'existente, solo se accede a la foto seleccionada '
+                          'mediante el selector del sistema.',
                         ),
                       ],
                     ),
