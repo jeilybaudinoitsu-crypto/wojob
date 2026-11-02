@@ -40,7 +40,15 @@ class PrivacyPolicyScreen extends StatelessWidget {
                 theme,
                 'Cada marcación de entrada o salida registra la fecha y hora, '
                 'tu ubicación GPS (latitud y longitud) y una foto del momento. '
-                'Estos datos forman el historial de asistencia de la sala.',
+                'La ubicación se consulta al preparar una marcación; WoJob no '
+                'la recopila en segundo plano. Estos datos forman el historial '
+                'de asistencia de la sala.',
+                bodyStyle,
+              ),
+              _paragraph(
+                theme,
+                'El estado de bienvenida y la aceptación de los términos se '
+                'guardan localmente en el dispositivo.',
                 bodyStyle,
               ),
             ],
@@ -61,9 +69,10 @@ class PrivacyPolicyScreen extends StatelessWidget {
               _permission(
                 theme,
                 Icons.photo_library_outlined,
-                'Galería de fotos',
-                'Para que puedas elegir tu foto de perfil o la imagen de tu '
-                    'cédula desde el dispositivo.',
+                'Fotos seleccionadas',
+                'Puedes elegir una foto de perfil o de tu cédula mediante el '
+                    'selector del sistema. WoJob accede solo a la imagen que '
+                    'eliges; no necesita permiso para leer toda tu galería.',
               ),
               _permission(
                 theme,
@@ -71,13 +80,6 @@ class PrivacyPolicyScreen extends StatelessWidget {
                 'Ubicación',
                 'Para registrar el lugar exacto de entrada y salida. Sin este '
                     'permiso no se puede completar una marcación.',
-              ),
-              _permission(
-                theme,
-                Icons.notifications_outlined,
-                'Notificaciones',
-                'Opcional. Se usa solo si activas avisos de turnos o '
-                    'recordatorios.',
               ),
             ],
           ),
@@ -102,6 +104,15 @@ class PrivacyPolicyScreen extends StatelessWidget {
                 'terceros. El acceso a la información está limitado por las '
                 'políticas de seguridad de la base de datos y del '
                 'almacenamiento.',
+                bodyStyle,
+              ),
+              _paragraph(
+                theme,
+                'Si un administrador inicia la contratación de un plan, '
+                'compartimos con Stripe el correo de la cuenta y los datos '
+                'necesarios para identificar la empresa y el plan. El pago se '
+                'procesa en el checkout de Stripe; WoJob no recibe ni guarda '
+                'los datos de la tarjeta.',
                 bodyStyle,
               ),
             ],
@@ -161,7 +172,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Última actualización: octubre de 2026.',
+                'Última actualización: noviembre de 2026.',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
